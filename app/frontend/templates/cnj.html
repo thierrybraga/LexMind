@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}Consulta CNJ - {{ app_name }}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+    <div>
+        <h2 class="mb-1 fw-bold text-primary-900"><i class="bi bi-building me-2 text-primary"></i>Consulta CNJ</h2>
+        <p class="text-muted mb-0">Consulte processos pelo número CNJ (DataJud)</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Search Form -->
+    <div class="col-lg-4 fade-in-up delay-100">
+        <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: calc(var(--navbar-height) + 1rem); z-index: 10;">
+            <div class="card-header bg-primary text-white py-3 rounded-top-4">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-search me-2"></i>Buscar Processo</h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('cnj') }}" id="formCNJ" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-muted" for="inputNumeroProcesso">Número do Processo <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-upc-scan text-muted"></i></span>
+                            <input type="text" class="form-control form-control-lg bg-light border-start-0 rounded-end-pill ps-0" name="numero_processo"
+                                   placeholder="0000000-00.0000.0.00.0000"
+                                   pattern="\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}"
+                                   required id="inputNumeroProcesso" autocomplete="off">
+                        </div>
+                        <div class="form-text small"><i class="bi bi-info-circle me-1"></i>Formato: NNNNNNN-DD.AAAA.J.TR.OOOO</div>
+                        <div class="invalid-feedback">Por favor, informe um número de processo válido.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm hover-scale rounded-pill transition-all" id="btnConsultar">
+                        <i class="bi bi-search me-2"></i>Consultar
+                    </button>
+                </form>
+
+                <hr class="my-4 border-light">
+
+                <div class="accordion accordion-flush" id="accordionHelp">
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 px-0 bg-transparent shadow-none fw-semibold small text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormat">
+                                <i class="bi bi-info-circle me-2"></i>Entenda o Formato CNJ
+                            </button>
+                        </h2>
+                        <div id="collapseFormat" class="accordion-collapse collapse" data-bs-parent="#accordionHelp">
+                            <div class="accordion-body px-0 pt-2 pb-0">
+                                <div class="p-3 rounded-3 bg-light small">
+                                    <code class="d-block mb-2 text-primary fw-bold" style="font-size:0.8125rem;">NNNNNNN-DD.AAAA.J.TR.OOOO</code>
+                                    <div class="text-muted">
+                                        <span class="d-block mb-1"><strong>N:</strong> Sequencial</span>
+                                        <span class="d-block mb-1"><strong>DD:</strong> Dígito Verificador</span>
+                                        <span class="d-block mb-1"><strong>AAAA:</strong> Ano do Ajuizamento</span>
+                                        <span class="d-block mb-1"><strong>J:</strong> Órgão da Justiça</span>
+                                        <span class="d-block mb-1"><strong>TR:</strong> Tribunal do Segmento</span>
+                                        <span class="d-block"><strong>OOOO:</strong> Unidade de Origem</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 px-0 bg-transparent shadow-none fw-semibold small text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSegments">
+                                <i class="bi bi-list-ol me-2"></i>Segmentos de Justiça (J)
+                            </button>
+                        </h2>
+                        <div id="collapseSegments" class="accordion-collapse collapse" data-bs-parent="#accordionHelp">
+                            <div class="accordion-body px-0 pt-2 pb-0">
+                                <div class="table-responsive rounded-3 border">
+                                    <table class="table table-sm table-striped small mb-0">
+                                        <tbody>
+                                            <tr><td class="fw-bold text-center bg-light" style="width:30px;">1</td><td>STF</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">2</td><td>CNJ</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">3</td><td>STJ</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">4</td><td>Justiça Federal</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">5</td><td>Justiça do Trabalho</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">6</td><td>Justiça Eleitoral</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">7</td><td>Justiça Militar</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">8</td><td>Justiça Estadual</td></tr>
+                                            <tr><td class="fw-bold text-center bg-light">9</td><td>Justiça Militar Estadual</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="col-lg-8 fade-in-up delay-200">
+        {% if processo %}
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center rounded-top-4 border-bottom">
+                <div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill mb-1">Processo Encontrado</span>
+                    <h5 class="mb-0 fw-bold text-dark font-monospace">
+                        <i class="bi bi-folder2-open me-2 text-primary"></i>{{ processo.numero_cnj }}
+                    </h5>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm rounded-pill hover-scale" onclick="sincronizarProcesso('{{ processo.numero_cnj }}')">
+                        <i class="bi bi-arrow-repeat me-1"></i>Sincronizar
+                    </button>
+                    <button class="btn btn-success btn-sm rounded-pill shadow-sm hover-scale text-white" onclick="salvarProcesso()">
+                        <i class="bi bi-bookmark-plus me-1"></i>Salvar Processo
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <!-- Basic Data -->
+                <h6 class="text-uppercase text-muted fw-bold small mb-3"><i class="bi bi-info-square me-2"></i>Informações Gerais</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100 border border-light">
+                            <small class="text-muted d-block fw-semibold text-uppercase" style="font-size:0.6875rem; letter-spacing:0.05em;">Classe Processual</small>
+                            <div class="fw-bold text-dark mt-1">{{ processo.classe|default('Não informado') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100 border border-light">
+                            <small class="text-muted d-block fw-semibold text-uppercase" style="font-size:0.6875rem; letter-spacing:0.05em;">Assunto Principal</small>
+                            <div class="fw-bold text-dark mt-1">{{ processo.assunto|default('Não informado') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100 border border-light">
+                            <small class="text-muted d-block fw-semibold text-uppercase" style="font-size:0.6875rem; letter-spacing:0.05em;">Órgão Julgador</small>
+                            <div class="fw-bold text-dark mt-1">
+                                {% if processo.vara or processo.comarca %}
+                                    {{ processo.vara|default('') }} - {{ processo.comarca|default('') }}
+                                {% else %}
+                                    Não informado
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100 border border-light">
+                            <small class="text-muted d-block fw-semibold text-uppercase" style="font-size:0.6875rem; letter-spacing:0.05em;">Tribunal</small>
+                            <div class="fw-bold text-dark mt-1">{{ processo.tribunal|default('Não informado') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100 border border-light">
+                            <small class="text-muted d-block fw-semibold text-uppercase" style="font-size:0.6875rem; letter-spacing:0.05em;">Data de Distribuição</small>
+                            <div class="fw-bold text-dark mt-1">{{ processo.data_distribuicao|default('Não informado') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100 border border-light">
+                            <small class="text-muted d-block fw-semibold text-uppercase" style="font-size:0.6875rem; letter-spacing:0.05em;">Valor da Causa</small>
+                            <div class="fw-bold text-dark mt-1">{{ processo.valor_causa|default('Não informado') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Partes -->
+                <h6 class="text-uppercase text-muted fw-bold small mb-3 mt-4"><i class="bi bi-people me-2"></i>Partes Envolvidas</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 bg-primary-subtle bg-opacity-10 rounded-3">
+                            <div class="card-body p-3">
+                                <h6 class="card-title text-primary fw-bold mb-3 d-flex align-items-center">
+                                    <span class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;"><i class="bi bi-person-fill" style="font-size: 0.8rem;"></i></span>
+                                    Polo Ativo
+                                </h6>
+                                <ul class="list-unstyled mb-0 ms-1">
+                                    {% for nome in processo.polo_ativo|default([]) %}
+                                    <li class="mb-2 d-flex align-items-start small text-dark fw-medium">
+                                        <i class="bi bi-check-circle-fill text-primary me-2 mt-1" style="font-size: 0.75rem;"></i>
+                                        {{ nome }}
+                                    </li>
+                                    {% else %}
+                                    <li class="text-muted small fst-italic">Nenhuma parte cadastrada</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 bg-danger-subtle bg-opacity-10 rounded-3">
+                            <div class="card-body p-3">
+                                <h6 class="card-title text-danger fw-bold mb-3 d-flex align-items-center">
+                                    <span class="bg-danger text-white rounded-circle d-inline-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;"><i class="bi bi-person-fill" style="font-size: 0.8rem;"></i></span>
+                                    Polo Passivo
+                                </h6>
+                                <ul class="list-unstyled mb-0 ms-1">
+                                    {% for nome in processo.polo_passivo|default([]) %}
+                                    <li class="mb-2 d-flex align-items-start small text-dark fw-medium">
+                                        <i class="bi bi-x-circle-fill text-danger me-2 mt-1" style="font-size: 0.75rem;"></i>
+                                        {{ nome }}
+                                    </li>
+                                    {% else %}
+                                    <li class="text-muted small fst-italic">Nenhuma parte cadastrada</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Movimentacoes -->
+                <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                    <h6 class="text-uppercase text-muted fw-bold small mb-0"><i class="bi bi-clock-history me-2"></i>Últimas Movimentações</h6>
+                    {% if processo.movimentacoes|default([])|length > 0 %}
+                    <span class="badge bg-secondary rounded-pill">{{ processo.movimentacoes|length }} registros</span>
+                    {% endif %}
+                </div>
+                
+                <div class="timeline position-relative ps-3 border-start ms-2">
+                    {% for mov in processo.movimentacoes|default([]) %}
+                    {% if loop.index0 < 5 %}
+                    <div class="timeline-item mb-4 position-relative ps-4">
+                        <div class="position-absolute top-0 start-0 translate-middle-x bg-white border border-2 border-{{ 'primary' if loop.first else 'secondary' }} rounded-circle" style="width: 12px; height: 12px; margin-left: -1px;"></div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="d-block text-dark {{ 'text-primary' if loop.first else '' }}">{{ mov.descricao }}</strong>
+                                {% if mov.complemento %}
+                                <p class="text-muted small mb-0 mt-1">{{ mov.complemento }}</p>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted flex-shrink-0 ms-3 bg-light px-2 py-1 rounded border">{{ mov.data }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-4 bg-light rounded-3">
+                        <i class="bi bi-inbox text-muted fs-4 d-block mb-2"></i>
+                        <p class="text-muted small mb-0">Nenhuma movimentação disponível</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if processo.movimentacoes|default([])|length > 5 %}
+                <div class="text-center mt-3">
+                    <button class="btn btn-outline-primary btn-sm rounded-pill hover-scale" data-bs-toggle="modal" data-bs-target="#modalMovimentacoes">
+                        <i class="bi bi-eye me-1"></i>Ver todas as {{ processo.movimentacoes|length }} movimentações
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-light py-3 px-4 d-flex justify-content-between align-items-center rounded-bottom-4 border-top">
+                <small class="text-muted"><i class="bi bi-arrow-clockwise me-1"></i>Última atualização: <strong>{{ processo.data_distribuicao|default('N/D') }}</strong></small>
+                <a href="{{ url_for('peticao_nova') }}?processo={{ processo.numero_cnj }}" class="btn btn-success btn-sm rounded-pill shadow-sm hover-scale text-white fw-semibold">
+                    <i class="bi bi-file-earmark-plus me-1"></i>Criar Petição
+                </a>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-5 text-center d-flex flex-column align-items-center justify-content-center">
+                <div class="bg-light rounded-circle p-4 mb-4 shadow-sm" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-search fs-1 text-primary-300"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">Consulta de Processos CNJ</h4>
+                <p class="text-muted mb-4" style="max-width: 400px;">
+                    Digite o número do processo no formato CNJ para consultar as informações atualizadas diretamente do DataJud.
+                </p>
+
+                <div class="row g-3 w-100 mt-2 justify-content-center" style="max-width:600px;">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-4 bg-light h-100 border border-light hover-scale transition-base">
+                            <i class="bi bi-file-text fs-3 text-primary mb-2 d-block"></i>
+                            <strong class="small d-block mb-1">Dados Completos</strong>
+                            <p class="small text-muted mb-0 lh-sm">Acesse classe, assunto, valores e datas.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-4 bg-light h-100 border border-light hover-scale transition-base">
+                            <i class="bi bi-people fs-3 text-info mb-2 d-block"></i>
+                            <strong class="small d-block mb-1">Partes Envolvidas</strong>
+                            <p class="small text-muted mb-0 lh-sm">Identifique autores, réus e advogados.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-4 bg-light h-100 border border-light hover-scale transition-base">
+                            <i class="bi bi-clock-history fs-3 text-success mb-2 d-block"></i>
+                            <strong class="small d-block mb-1">Histórico Real</strong>
+                            <p class="small text-muted mb-0 lh-sm">Acompanhe todas as movimentações.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 bg-warning-subtle text-warning-emphasis mt-5 mb-0 d-inline-flex align-items-center px-4 py-2 rounded-pill small shadow-sm">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    A disponibilidade dos dados depende do tribunal de origem.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Movimentacoes -->
+<div class="modal fade" id="modalMovimentacoes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Histórico Completo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body pt-4">
+                {% if processo and processo.movimentacoes %}
+                <div class="timeline position-relative ps-3 border-start ms-2">
+                    {% for mov in processo.movimentacoes %}
+                    <div class="timeline-item mb-4 position-relative ps-4">
+                        <div class="position-absolute top-0 start-0 translate-middle-x bg-white border border-2 border-secondary rounded-circle" style="width: 12px; height: 12px; margin-left: -1px;"></div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="d-block text-dark small">{{ mov.descricao }}</strong>
+                                {% if mov.complemento %}
+                                <p class="text-muted small mb-0 mt-1">{{ mov.complemento }}</p>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted flex-shrink-0 ms-3 bg-light px-2 py-1 rounded border small">{{ mov.data }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer border-top-0 pt-0 pb-4">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Máscara CNJ e Validação
+document.addEventListener('DOMContentLoaded', function() {
+    const inputCNJ = document.getElementById('inputNumeroProcesso');
+    const form = document.getElementById('formCNJ');
+    
+    if (inputCNJ) {
+        inputCNJ.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 20) value = value.slice(0, 20);
+            
+            let f = '';
+            if (value.length > 0) f += value.slice(0, 7);
+            if (value.length > 7) f += '-' + value.slice(7, 9);
+            if (value.length > 9) f += '.' + value.slice(9, 13);
+            if (value.length > 13) f += '.' + value.slice(13, 14);
+            if (value.length > 14) f += '.' + value.slice(14, 16);
+            if (value.length > 16) f += '.' + value.slice(16, 20);
+            
+            e.target.value = f;
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            } else {
+                const btn = document.getElementById('btnConsultar');
+                if (btn) {
+                    const originalContent = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Consultando...';
+                }
+            }
+            form.classList.add('was-validated');
+        });
+    }
+});
+
+function sincronizarProcesso(numero) {
+    if (confirm('Sincronizar movimentações deste processo?')) {
+        const btn = document.querySelector(`button[onclick="sincronizarProcesso('${numero}')"]`);
+        const originalContent = btn.innerHTML;
+        
+        // Loading state
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sincronizando...';
+        
+        if (typeof Toast !== 'undefined') Toast.info('Iniciando sincronização...', 2000);
+        
+        fetch(`/cnj/sync/${encodeURIComponent(numero)}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Toast !== 'undefined') Toast.success('Sincronização concluída!');
+                // Reload to show new data
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                throw new Error(data.error || 'Erro na sincronização');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            if (typeof Toast !== 'undefined') Toast.error('Erro: ' + error.message);
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        });
+    }
+}
+
+async function salvarProcesso() {
+    const btn = document.querySelector('button[onclick="salvarProcesso()"]');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    const processo = {{ processo|tojson if processo else '{}' }};
+    try {
+        const response = await fetch('/cnj/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(processo)
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            if (typeof Toast !== 'undefined') Toast.success('Processo salvo com sucesso!');
+            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvo!';
+            btn.classList.remove('btn-outline-success');
+            btn.classList.add('btn-success', 'text-white');
+        } else {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+    } catch (error) {
+        console.error(error);
+        if (typeof Toast !== 'undefined') Toast.error('Erro ao salvar processo: ' + error.message);
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

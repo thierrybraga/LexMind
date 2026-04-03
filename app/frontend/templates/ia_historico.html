@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico IA - {{ app_name }}{% endblock %}
+
+{% block content %}
+<!-- Sticky Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-body-tertiary pt-3 pb-2 fade-in-up" style="top: 0; z-index: 1000; backdrop-filter: blur(10px); background-color: rgba(var(--bs-body-bg-rgb), 0.8) !important;">
+    <div>
+        <h2 class="fw-bold text-primary-900 mb-0">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Histórico de Consultas
+        </h2>
+        <p class="text-muted small mb-0">Registro de interações com a Inteligência Artificial</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('pesquisa') }}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm hover-scale">
+            <i class="bi bi-plus-lg me-2"></i>Nova Consulta
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 fade-in-up delay-100">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light border-bottom">
+                    <tr>
+                        <th scope="col" class="ps-4 py-3 text-uppercase text-muted small fw-bold">Data</th>
+                        <th scope="col" class="py-3 text-uppercase text-muted small fw-bold">Pergunta</th>
+                        <th scope="col" class="py-3 text-uppercase text-muted small fw-bold">Fontes</th>
+                        <th scope="col" class="text-end pe-4 py-3 text-uppercase text-muted small fw-bold">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for log in historico %}
+                    <tr class="fade-in-up" style="animation-delay: {{ loop.index * 50 }}ms;">
+                        <td class="ps-4 text-nowrap py-3" style="width: 150px;">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary-subtle text-primary rounded p-2 me-3">
+                                    <i class="bi bi-calendar-event"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ log.timestamp[:10] }}</div>
+                                    <small class="text-muted">{{ log.timestamp[11:16] }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-truncate fw-medium text-dark" style="max-width: 450px;" title="{{ log.prompt }}">
+                                {{ log.prompt }}
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            {% if log.fontes_usadas %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">
+                                    <i class="bi bi-journal-bookmark me-1"></i>{{ log.fontes_usadas|length }} fontes
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3">
+                                    Sem fontes
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4 py-3">
+                            <button class="btn btn-sm btn-light border rounded-pill shadow-sm hover-scale btn-detalhes" 
+                                    data-id="{{ log.id }}"
+                                    data-prompt="{{ log.prompt }}"
+                                    data-fontes='{{ log.fontes_usadas|tojson if log.fontes_usadas else "[]" }}'
+                                    data-bs-toggle="tooltip" 
+                                    title="Ver Detalhes">
+                                <i class="bi bi-eye text-primary"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center justify-content-center py-5">
+                                <div class="bg-light rounded-circle p-4 mb-3 shadow-sm">
+                                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                                </div>
+                                <h5 class="fw-bold text-muted mb-1">Nenhuma consulta encontrada</h5>
+                                <p class="text-muted small mb-3">O histórico de interações com a IA aparecerá aqui.</p>
+                                <a href="{{ url_for('pesquisa') }}" class="btn btn-outline-primary rounded-pill btn-sm px-4">
+                                    Iniciar Consulta
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Paginação -->
+    {% if total_pages > 1 %}
+    <div class="card-footer bg-white border-top-0 py-4 rounded-bottom-4">
+        <nav aria-label="Navegação de páginas">
+            <ul class="pagination justify-content-center mb-0 gap-2">
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link rounded-circle border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                       href="{{ url_for('ia_historico', page=page-1) }}" 
+                       style="width: 36px; height: 36px;">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link rounded-circle border-0 shadow-sm d-flex align-items-center justify-content-center fw-bold" 
+                       href="{{ url_for('ia_historico', page=p) }}"
+                       style="width: 36px; height: 36px;">
+                        {{ p }}
+                    </a>
+                </li>
+                {% endfor %}
+                
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a class="page-link rounded-circle border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                       href="{{ url_for('ia_historico', page=page+1) }}"
+                       style="width: 36px; height: 36px;">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Detalhes (Placeholder) -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary">Detalhes da Consulta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4">
+                    <label class="small text-uppercase text-muted fw-bold mb-2">Pergunta Realizada</label>
+                    <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                        <p class="mb-0 text-dark" id="modalPergunta">...</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="small text-uppercase text-muted fw-bold mb-2">Fontes Consultadas</label>
+                    <div id="modalFontes" class="list-group list-group-flush rounded-3 border-0">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const detailButtons = document.querySelectorAll('.btn-detalhes');
+        detailButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const prompt = this.getAttribute('data-prompt');
+                const fontesJson = this.getAttribute('data-fontes');
+                let fontes = [];
+                try {
+                    fontes = JSON.parse(fontesJson);
+                } catch (e) {
+                    console.error('Erro ao analisar fontes:', e);
+                }
+                verDetalhes(id, prompt, fontes);
+            });
+        });
+    });
+
+    function verDetalhes(id, prompt, fontes) {
+        // Popula o modal com os dados passados
+        const modalEl = document.getElementById('modalDetalhes');
+        const modal = new bootstrap.Modal(modalEl);
+        
+        document.getElementById('modalPergunta').textContent = prompt || 'Pergunta não disponível';
+        
+        const fontesContainer = document.getElementById('modalFontes');
+        if (fontes && Array.isArray(fontes) && fontes.length > 0) {
+            fontesContainer.innerHTML = fontes.map(fonte => `
+                <div class="list-group-item bg-light border-0 mb-2 rounded-3">
+                    <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                        <h6 class="mb-0 fw-bold text-primary small"><i class="bi bi-journal-bookmark me-2"></i>Fonte Jurídica</h6>
+                    </div>
+                    <p class="mb-1 small text-secondary text-break">${fonte}</p>
+                </div>
+            `).join('');
+        } else {
+            fontesContainer.innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-journal-x fs-1 mb-2 d-block opacity-50"></i>
+                    <p class="small mb-0">Nenhuma fonte citada nesta resposta.</p>
+                </div>
+            `;
+        }
+        
+        modal.show();
+    }
+</script>
+{% endblock %}

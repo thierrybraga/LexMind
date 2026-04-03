@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Login - {{ app_name }}{% endblock %}
+{% block body_class %}login-page{% endblock %}
+
+{% block public_content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100 py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                
+                <!-- Brand Logo -->
+                <div class="text-center mb-5 fade-in-up">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-lg mb-3 hover-scale" style="width: 80px; height: 80px;">
+                        <i class="bi bi-briefcase-fill fs-1"></i>
+                    </div>
+                    <h2 class="fw-bold text-primary-900 mb-1">IA Jurídica</h2>
+                    <p class="text-muted">Inteligência Artificial para Advocacia</p>
+                </div>
+
+                <div class="card shadow-xl border-0 fade-in-up delay-100 rounded-4 backdrop-blur">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="text-center mb-4">
+                            <h4 class="fw-bold text-primary">Bem-vindo</h4>
+                            <p class="text-muted small">Acesse sua conta para continuar</p>
+                        </div>
+
+                        <!-- Flash Messages (Local fallback if global toast misses) -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category if category != 'message' else 'info' }} d-flex align-items-center py-2 mb-3 small border-0 bg-{{ category if category != 'message' else 'info' }}-subtle text-{{ category if category != 'message' else 'info' }}-emphasis rounded-3" role="alert">
+                                        <i class="bi bi-info-circle-fill me-2"></i>
+                                        <div>{{ message }}</div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <!-- Login Form -->
+                        <form method="POST" action="{{ url_for('login') }}" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-uppercase text-muted" for="loginEmail">Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-envelope text-muted"></i></span>
+                                    <input type="email" class="form-control bg-light border-start-0 rounded-end-pill ps-0" id="loginEmail" name="email" placeholder="seu@email.com" required autofocus autocomplete="email">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label small fw-semibold text-uppercase text-muted" for="loginSenha">Senha</label>
+                                    <a href="{{ url_for('recuperar_senha') }}" class="small text-decoration-none fw-medium" tabindex="-1">Esqueceu?</a>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-lock text-muted"></i></span>
+                                    <input type="password" class="form-control bg-light border-start-0 ps-0 border-end-0" id="loginSenha" name="senha" placeholder="••••••••" required autocomplete="current-password">
+                                    <button class="btn btn-light border border-start-0 rounded-end-pill text-muted px-3" type="button" onclick="togglePassword(this)" aria-label="Mostrar/ocultar senha">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-4 form-check">
+                                <input type="checkbox" class="form-check-input" id="lembrar" name="lembrar">
+                                <label class="form-check-label small text-muted" for="lembrar">Manter conectado</label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm mb-4 hover-scale transition-all">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Entrar no Sistema
+                            </button>
+                            
+                            <div class="text-center">
+                                <span class="text-muted small">Não tem conta?</span>
+                                <a href="{{ url_for('registro') }}" class="text-decoration-none fw-bold ms-1 text-primary">Criar conta gratuita</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center mt-4 fade-in-up delay-200">
+                    <small class="text-muted d-block mb-1">
+                        <i class="bi bi-shield-lock-fill me-1"></i>Ambiente Seguro & Criptografado
+                    </small>
+                    <small class="text-muted opacity-75" style="font-size: 0.75rem;">
+                        &copy; {{ current_year }} IA Jurídica v{{ version }}
+                    </small>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePassword(btn) {
+    const input = btn.parentElement.querySelector('input');
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+}
+</script>
+{% endblock %}

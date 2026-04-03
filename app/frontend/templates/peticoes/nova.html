@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Petição - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <!-- Header -->
+    <div class="mb-4 fade-in">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('peticoes') }}" class="text-decoration-none">Petições</a></li>
+                <li class="breadcrumb-item active">Nova Petição</li>
+            </ol>
+        </nav>
+        <h4 class="fw-bold text-gradient"><i class="bi bi-file-earmark-plus me-2 text-primary"></i>Nova Petição</h4>
+        <p class="text-muted mb-0">Gere petições jurídicas com auxílio de Inteligência Artificial</p>
+    </div>
+
+    <div class="row g-4 stagger-in">
+        <!-- Form -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>Dados da Petição</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form id="formPeticao">
+                        <!-- Step indicator -->
+                        <div class="d-flex gap-2 mb-4 pb-3 border-bottom overflow-auto hide-scrollbar">
+                            <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill border border-primary-subtle" data-step="1">1. Tipo</span>
+                            <span class="badge bg-light text-muted px-3 py-2 rounded-pill border" data-step="2">2. Processo</span>
+                            <span class="badge bg-light text-muted px-3 py-2 rounded-pill border" data-step="3">3. Partes</span>
+                            <span class="badge bg-light text-muted px-3 py-2 rounded-pill border" data-step="4">4. Fatos</span>
+                            <span class="badge bg-light text-muted px-3 py-2 rounded-pill border" data-step="5">5. Gerar</span>
+                        </div>
+
+                        <!-- Tipo -->
+                        <div class="mb-4 fade-in delay-1">
+                            <label for="tipo" class="form-label fw-bold">Tipo de Petição <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-lg shadow-sm" id="tipo" name="tipo" required>
+                                <option value="">Selecione o tipo...</option>
+                                <option value="inicial">Petição Inicial</option>
+                                <option value="contestacao">Contestação</option>
+                                <option value="recurso">Recurso</option>
+                                <option value="habeas_corpus">Habeas Corpus</option>
+                                <option value="embargos_declaracao">Embargos de Declaração</option>
+                                <option value="agravo_instrumento">Agravo de Instrumento</option>
+                                <option value="apelacao">Apelação</option>
+                                <option value="manifestacao">Manifestação</option>
+                                <option value="requerimento">Requerimento</option>
+                                <option value="contrarrazoes">Contrarrazões</option>
+                                <option value="memoriais">Memoriais</option>
+                            </select>
+                        </div>
+
+                        <!-- Processo -->
+                        <div class="card mb-4 border-0 bg-light fade-in delay-2">
+                            <div class="card-header bg-transparent border-0 py-3">
+                                <h6 class="mb-0 fw-bold small text-muted"><i class="bi bi-folder me-2"></i>Dados do Processo <span class="fw-normal">(opcional)</span></h6>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="numero_processo" class="form-label small fw-semibold">Número do Processo</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white text-muted"><i class="bi bi-hash"></i></span>
+                                            <input type="text" class="form-control" id="numero_processo" placeholder="0000000-00.0000.0.00.0000" pattern="\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}">
+                                        </div>
+                                        <div class="form-text">Formato CNJ</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="vara" class="form-label small fw-semibold">Vara/Juízo</label>
+                                        <input type="text" class="form-control" id="vara" placeholder="Ex: 1ª Vara Cível">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="comarca" class="form-label small fw-semibold">Comarca</label>
+                                        <input type="text" class="form-control" id="comarca" placeholder="Ex: São Paulo/SP">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Partes -->
+                        <div class="card mb-4 border-0 bg-light fade-in delay-3">
+                            <div class="card-header bg-transparent border-0 py-3">
+                                <h6 class="mb-0 fw-bold small text-muted"><i class="bi bi-people me-2"></i>Partes</h6>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="autor" class="form-label small fw-semibold">Autor/Requerente <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="autor" required placeholder="Nome completo">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="reu" class="form-label small fw-semibold">Réu/Requerido</label>
+                                        <input type="text" class="form-control" id="reu" placeholder="Nome completo">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="advogado" class="form-label small fw-semibold">Advogado(a)</label>
+                                        <input type="text" class="form-control" id="advogado" value="{{ usuario.nome if usuario else '' }}" placeholder="Nome do advogado">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="oab" class="form-label small fw-semibold">OAB</label>
+                                        <input type="text" class="form-control" id="oab" value="{{ usuario.oab if usuario else '' }}" placeholder="OAB/UF 000.000">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fatos -->
+                        <div class="mb-4 fade-in delay-4">
+                            <label for="fatos" class="form-label fw-bold">Descrição dos Fatos <span class="text-danger">*</span></label>
+                            <textarea class="form-control shadow-sm" id="fatos" name="fatos" rows="8" required
+                                      placeholder="Descreva detalhadamente os fatos relevantes. Inclua datas, locais, pessoas envolvidas e circunstâncias importantes."></textarea>
+                            <div class="form-text text-primary"><i class="bi bi-lightbulb-fill me-1 text-warning"></i>Quanto mais detalhada a descrição, melhor será a petição gerada.</div>
+                        </div>
+
+                        <!-- Fundamentos -->
+                        <div class="mb-4 fade-in delay-4">
+                            <label for="fundamentos" class="form-label fw-bold">Fundamentos Jurídicos <span class="text-muted fw-normal">(opcional)</span></label>
+                            <textarea class="form-control shadow-sm" id="fundamentos" name="fundamentos" rows="4"
+                                      placeholder="Artigos de lei, súmulas, teses. Se vazio, a IA sugere automaticamente."></textarea>
+                        </div>
+
+                        <!-- Pedidos -->
+                        <div class="mb-4 fade-in delay-4">
+                            <label class="form-label fw-bold">Pedidos</label>
+                            <div id="pedidosContainer">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control pedido-input" placeholder="Descreva um pedido">
+                                    <button type="button" class="btn btn-outline-danger btn-remove-pedido" disabled aria-label="Remover"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="btnAddPedido">
+                                <i class="bi bi-plus-circle me-1"></i>Adicionar Pedido
+                            </button>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="card mb-4 border-0 bg-light fade-in delay-5">
+                            <div class="card-body py-3">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="usarRag" checked>
+                                    <label class="form-check-label small fw-medium" for="usarRag">
+                                        <i class="bi bi-search me-1 text-primary"></i>Buscar jurisprudência automaticamente (RAG)
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="revisarAntes">
+                                    <label class="form-check-label small fw-medium" for="revisarAntes">
+                                        <i class="bi bi-eye me-1 text-info"></i>Mostrar prévia antes de salvar
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2 fade-in delay-5">
+                            <button type="submit" class="btn btn-primary btn-lg fw-semibold shadow-sm hover-scale flex-grow-1 flex-md-grow-0" id="btnGerar">
+                                <i class="bi bi-stars me-2"></i>Gerar Petição com IA
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg" id="btnLimpar">
+                                <i class="bi bi-eraser me-2"></i>Limpar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Structure -->
+            <div class="card border-0 shadow-sm mb-4 sticky-top fade-in delay-2" style="top: calc(var(--navbar-height) + 1rem); z-index: 10;">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-list-check me-2 text-info"></i>Estrutura da Petição</h6>
+                </div>
+                <div class="card-body">
+                    <div id="estruturaPeticao">
+                        <p class="text-muted small mb-0 text-center py-3">Selecione um tipo de petição para ver a estrutura sugerida.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card border-0 shadow-sm mb-4 fade-in delay-3">
+                <div class="card-header bg-warning-subtle border-bottom-0 py-3">
+                    <h6 class="mb-0 fw-bold text-warning-emphasis"><i class="bi bi-lightbulb me-2"></i>Dicas</h6>
+                </div>
+                <div class="card-body bg-warning-subtle bg-opacity-10">
+                    <ul class="mb-0 small ps-3 text-muted">
+                        <li class="mb-2">Descreva os fatos de forma clara e cronológica</li>
+                        <li class="mb-2">Inclua datas e documentos relevantes</li>
+                        <li class="mb-2">Seja específico nos pedidos</li>
+                        <li class="mb-2">Revise sempre a petição gerada</li>
+                        <li>A IA auxilia, mas não substitui o advogado</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Legal Warning -->
+            <div class="alert alert-danger fade-in delay-4 border-0 shadow-sm">
+                <h6 class="alert-heading small fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Atenção</h6>
+                <p class="mb-0 small">
+                    Esta ferramenta utiliza IA para auxiliar na elaboração. <strong>Revise cuidadosamente</strong> antes de utilizar.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal fade" id="modalResultado" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-check-circle me-2"></i>Petição Gerada</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <!-- Stats -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center py-3">
+                                <h3 class="mb-0 fw-bold text-primary" id="resultConfianca">--</h3>
+                                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Confiança IA</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center py-3">
+                                <h3 class="mb-0 fw-bold text-info" id="resultTokens">--</h3>
+                                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Tokens</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center py-3">
+                                <h3 class="mb-0 fw-bold text-success" id="resultTempo">--</h3>
+                                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Segundos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jurisprudences Used -->
+                <div class="card border-0 shadow-sm mb-4" id="jurisprudenciasUtilizadas" style="display: none;">
+                    <div class="card-header bg-white">
+                        <h6 class="fw-bold small mb-0"><i class="bi bi-bookmark me-2 text-primary"></i>Jurisprudências Utilizadas</h6>
+                    </div>
+                    <div class="card-body">
+                         <div id="listaJurisprudencias" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="card border-0 shadow-sm">
+                     <div class="card-body p-5">
+                        <div id="resultConteudo" class="peticao-texto"
+                             style="white-space: pre-wrap; font-family: 'Times New Roman', serif; line-height: 2; font-size: 1.1rem; text-align: justify;"></div>
+                     </div>
+                </div>
+
+                <div class="alert alert-warning mt-4 shadow-sm border-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Revise cuidadosamente</strong> todo o conteúdo antes de utilizar.
+                </div>
+            </div>
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="bi bi-pencil me-2"></i>Editar</button>
+                <div class="vr mx-2"></div>
+                <button type="button" class="btn btn-outline-primary" id="btnExportarDocx"><i class="bi bi-file-earmark-word me-2"></i>DOCX</button>
+                <button type="button" class="btn btn-outline-danger" id="btnExportarPdf"><i class="bi bi-file-earmark-pdf me-2"></i>PDF</button>
+                <button type="button" class="btn btn-success ms-2" id="btnSalvar"><i class="bi bi-check-lg me-2"></i>Salvar Petição</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="modalLoading" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-4" style="width: 3rem; height: 3rem; border-width: 3px;" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <h6 class="fw-bold mb-2">Gerando Petição...</h6>
+                <p class="text-muted small mb-0">Analisando fatos e buscando fundamentação jurídica.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const estruturas = {
+    'inicial': ['ENDERECAMENTO', 'QUALIFICACAO DAS PARTES', 'DOS FATOS', 'DO DIREITO', 'DOS PEDIDOS', 'DO VALOR DA CAUSA', 'REQUERIMENTOS FINAIS'],
+    'contestacao': ['ENDERECAMENTO', 'QUALIFICACAO DO REU', 'SINTESE DA INICIAL', 'PRELIMINARES', 'DO MERITO', 'DA IMPUGNACAO AOS DOCUMENTOS', 'DOS PEDIDOS', 'REQUERIMENTOS FINAIS'],
+    'habeas_corpus': ['ENDERECAMENTO', 'QUALIFICACAO DO PACIENTE', 'DA AUTORIDADE COATORA', 'DOS FATOS', 'DO CONSTRANGIMENTO ILEGAL', 'DO DIREITO', 'DOS PEDIDOS', 'REQUERIMENTOS FINAIS'],
+    'recurso': ['ENDERECAMENTO', 'QUALIFICACAO', 'DA TEMPESTIVIDADE', 'DO CABIMENTO', 'DOS FATOS', 'DAS RAZOES', 'DO DIREITO', 'DOS PEDIDOS'],
+    'apelacao': ['ENDERECAMENTO', 'QUALIFICACAO', 'DA TEMPESTIVIDADE', 'DA SENTENCA', 'DAS RAZOES', 'DO DIREITO', 'DOS PEDIDOS'],
+    'embargos_declaracao': ['ENDERECAMENTO', 'QUALIFICACAO', 'DA TEMPESTIVIDADE', 'DO CABIMENTO', 'DA OMISSAO/CONTRADICAO/OBSCURIDADE', 'DOS PEDIDOS'],
+    'agravo_instrumento': ['ENDERECAMENTO', 'QUALIFICACAO', 'DA TEMPESTIVIDADE', 'DA DECISAO AGRAVADA', 'DO FUMUS BONI IURIS', 'DO PERICULUM IN MORA', 'DOS PEDIDOS']
+};
+
+document.getElementById('tipo').addEventListener('change', function() {
+    const tipo = this.value;
+    const container = document.getElementById('estruturaPeticao');
+    if (tipo && estruturas[tipo]) {
+        container.innerHTML = '<ol class="mb-0 small" style="padding-left:1.25rem;">' +
+            estruturas[tipo].map(item => `<li class="mb-1 fw-medium">${item}</li>`).join('') + '</ol>';
+    } else {
+        container.innerHTML = '<p class="text-muted small mb-0">Selecione um tipo de peticao para ver a estrutura.</p>';
+    }
+});
+
+// Add pedido
+document.getElementById('btnAddPedido').addEventListener('click', function() {
+    const container = document.getElementById('pedidosContainer');
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2';
+    div.innerHTML = '<input type="text" class="form-control pedido-input" placeholder="Descreva um pedido"><button type="button" class="btn btn-outline-danger btn-remove-pedido" aria-label="Remover"><i class="bi bi-trash"></i></button>';
+    container.appendChild(div);
+    updateRemoveButtons();
+    div.querySelector('input').focus();
+});
+
+document.getElementById('pedidosContainer').addEventListener('click', function(e) {
+    if (e.target.closest('.btn-remove-pedido')) {
+        e.target.closest('.input-group').remove();
+        updateRemoveButtons();
+    }
+});
+
+function updateRemoveButtons() {
+    const buttons = document.querySelectorAll('.btn-remove-pedido');
+    buttons.forEach(btn => btn.disabled = buttons.length <= 1);
+}
+
+document.getElementById('btnLimpar').addEventListener('click', function() {
+    if (confirm('Limpar todo o formulario?')) {
+        document.getElementById('formPeticao').reset();
+        document.getElementById('estruturaPeticao').innerHTML = '<p class="text-muted small mb-0">Selecione um tipo de peticao para ver a estrutura.</p>';
+    }
+});
+
+// Submit
+document.getElementById('formPeticao').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const pedidos = [];
+    document.querySelectorAll('.pedido-input').forEach(input => {
+        if (input.value.trim()) pedidos.push(input.value.trim());
+    });
+
+    const dados = {
+        tipo: document.getElementById('tipo').value,
+        fatos: document.getElementById('fatos').value,
+        fundamentos: document.getElementById('fundamentos').value || null,
+        pedidos: pedidos.length > 0 ? pedidos : null,
+        partes: {
+            autor: document.getElementById('autor').value,
+            reu: document.getElementById('reu').value || null,
+            advogado: document.getElementById('advogado').value || null,
+            oab: document.getElementById('oab').value || null
+        },
+        processo: {
+            numero: document.getElementById('numero_processo').value || null,
+            vara: document.getElementById('vara').value || null,
+            comarca: document.getElementById('comarca').value || null
+        },
+        usar_rag: document.getElementById('usarRag').checked
+    };
+
+    const loadingModal = new bootstrap.Modal(document.getElementById('modalLoading'));
+    loadingModal.show();
+
+    try {
+        const response = await fetch('/peticoes/nova', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        loadingModal.hide();
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || error.detail || 'Erro ao gerar petição');
+        }
+
+        const resultado = await response.json();
+        
+        // Atualizar modal de resultado
+        // Backend returns nested structure: { peticao: {...}, fontes_utilizadas: [...], ... }
+        const peticao = resultado.peticao || resultado; // Fallback if flattened
+        
+        document.getElementById('resultConfianca').textContent = (resultado.confianca ? Math.round(resultado.confianca * 100) : (peticao.confianca_ia || 0)) + '%';
+        document.getElementById('resultTokens').textContent = '-'; // Not returned in response
+        document.getElementById('resultTempo').textContent = '-'; // Not returned in response
+        document.getElementById('resultConteudo').textContent = peticao.conteudo || '';
+
+        const fontes = resultado.fontes_utilizadas || resultado.jurisprudencias_utilizadas || [];
+        if (fontes.length > 0) {
+            document.getElementById('jurisprudenciasUtilizadas').style.display = 'block';
+            document.getElementById('listaJurisprudencias').innerHTML = fontes
+                .map(j => `<span class="badge bg-secondary-subtle text-secondary">${j.fonte || 'Tribunal'} (${j.tribunal || ''})</span>`).join('');
+        } else {
+            document.getElementById('jurisprudenciasUtilizadas').style.display = 'none';
+        }
+
+        window.peticaoGerada = peticao; // Store peticao object for saving/exporting
+        new bootstrap.Modal(document.getElementById('modalResultado')).show();
+    } catch (error) {
+        loadingModal.hide();
+        Toast.error(error.message);
+    }
+});
+
+// Export helpers
+async function exportar(formato) {
+    if (!window.peticaoGerada) return;
+    try {
+        const response = await fetch('/peticoes/exportar', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ conteudo: window.peticaoGerada.conteudo, titulo: window.peticaoGerada.titulo, formato })
+        });
+        
+        if (!response.ok) {
+             const error = await response.json();
+             throw new Error(error.error || 'Erro ao exportar');
+        }
+        
+        // Se a API retornar JSON com URL ou Base64, ajustar aqui.
+        // Assumindo blob download direto por enquanto, mas se falhar ajustaremos.
+        // Se app.py retorna jsonify(result), result deve ter 'download_url' ou 'content'.
+        const result = await response.json();
+        
+        if (result.download_url) {
+            window.open(result.download_url, '_blank');
+        } else if (result.content_base64) {
+             const link = document.createElement('a');
+             link.href = `data:application/${formato === 'pdf' ? 'pdf' : 'vnd.openxmlformats-officedocument.wordprocessingml.document'};base64,${result.content_base64}`;
+             link.download = `peticao_${Date.now()}.${formato}`;
+             link.click();
+        } else {
+             Toast.success(`Exportação iniciada.`);
+        }
+        
+    } catch (error) { Toast.error(error.message); }
+}
+
+document.getElementById('btnExportarDocx').addEventListener('click', () => exportar('docx'));
+document.getElementById('btnExportarPdf').addEventListener('click', () => exportar('pdf'));
+
+document.getElementById('btnSalvar').addEventListener('click', async function() {
+    if (!window.peticaoGerada) return;
+    try {
+        const response = await fetch('/peticoes/nova', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                tipo: window.peticaoGerada.tipo,
+                titulo: window.peticaoGerada.titulo || `Nova Petição - ${new Date().toLocaleDateString()}`,
+                conteudo: window.peticaoGerada.conteudo,
+                numero_processo: document.getElementById('numero_processo').value || null,
+                usar_ia: false // Importante para diferenciar de geração
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Erro ao salvar');
+        }
+        
+        const data = await response.json();
+        Toast.success('Petição salva com sucesso!');
+        setTimeout(() => window.location.href = data.redirect_url || '/peticoes', 1000);
+    } catch (error) { Toast.error(error.message); }
+});
+</script>
+{% endblock %}

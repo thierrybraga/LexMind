@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de Auditoria - IA Jurídica{% endblock %}
+
+{% block content %}
+<!-- Sticky Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white bg-opacity-75 backdrop-blur py-3 border-bottom z-index-1000" style="top: 0;">
+    <div>
+        <h2 class="mb-1 fw-bold text-gradient"><i class="bi bi-clock-history me-2"></i>Logs de Auditoria</h2>
+        <p class="text-muted mb-0">Monitore as atividades e segurança do sistema</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary rounded-pill px-3 shadow-sm hover-scale" onclick="exportarLogs()">
+            <i class="bi bi-download me-2"></i>Exportar
+        </button>
+        <button class="btn btn-outline-danger rounded-pill px-3 shadow-sm hover-scale" onclick="limparLogs()" title="Requer confirmação">
+            <i class="bi bi-trash me-2"></i>Limpar Antigos
+        </button>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 fade-in-up">
+        <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale transition-all border-start border-4 border-primary">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.75rem;">Total de Registros</small>
+                        <h3 class="mb-0 fw-bold text-primary">{{ total }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary">
+                        <i class="bi bi-database fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Outros cards poderiam ser adicionados aqui se houvesse dados -->
+</div>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up delay-100">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('admin_logs') }}" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-uppercase text-muted">Módulo</label>
+                <select name="modulo" class="form-select bg-light border-0">
+                    <option value="">Todos</option>
+                    <option value="auth" {% if request.args.get('modulo') == 'auth' %}selected{% endif %}>Autenticação</option>
+                    <option value="peticoes" {% if request.args.get('modulo') == 'peticoes' %}selected{% endif %}>Petições</option>
+                    <option value="processos" {% if request.args.get('modulo') == 'processos' %}selected{% endif %}>Processos</option>
+                    <option value="documentos" {% if request.args.get('modulo') == 'documentos' %}selected{% endif %}>Documentos</option>
+                    <option value="cnj" {% if request.args.get('modulo') == 'cnj' %}selected{% endif %}>CNJ</option>
+                    <option value="rag" {% if request.args.get('modulo') == 'rag' %}selected{% endif %}>RAG/Pesquisa</option>
+                    <option value="admin" {% if request.args.get('modulo') == 'admin' %}selected{% endif %}>Administração</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-uppercase text-muted">Ação</label>
+                <select name="acao" class="form-select bg-light border-0">
+                    <option value="">Todas</option>
+                    <option value="login" {% if request.args.get('acao') == 'login' %}selected{% endif %}>Login</option>
+                    <option value="logout" {% if request.args.get('acao') == 'logout' %}selected{% endif %}>Logout</option>
+                    <option value="criar" {% if request.args.get('acao') == 'criar' %}selected{% endif %}>Criar</option>
+                    <option value="editar" {% if request.args.get('acao') == 'editar' %}selected{% endif %}>Editar</option>
+                    <option value="excluir" {% if request.args.get('acao') == 'excluir' %}selected{% endif %}>Excluir</option>
+                    <option value="visualizar" {% if request.args.get('acao') == 'visualizar' %}selected{% endif %}>Visualizar</option>
+                    <option value="download" {% if request.args.get('acao') == 'download' %}selected{% endif %}>Download</option>
+                    <option value="gerar_peticao" {% if request.args.get('acao') == 'gerar_peticao' %}selected{% endif %}>Gerar Petição</option>
+                    <option value="pesquisa" {% if request.args.get('acao') == 'pesquisa' %}selected{% endif %}>Pesquisa</option>
+                    <option value="erro" {% if request.args.get('acao') == 'erro' %}selected{% endif %}>Erro</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-uppercase text-muted">Data Início</label>
+                <input type="date" name="data_inicio" class="form-control bg-light border-0" value="{{ request.args.get('data_inicio', '') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-uppercase text-muted">Data Fim</label>
+                <input type="date" name="data_fim" class="form-control bg-light border-0" value="{{ request.args.get('data_fim', '') }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm hover-scale">
+                    <i class="bi bi-search me-2"></i>Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Logs -->
+<div class="card border-0 shadow-sm rounded-4 fade-in-up delay-200">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th width="160" class="ps-4 text-uppercase text-muted small fw-bold border-0">Data/Hora</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Usuário</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Ação</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Recurso</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Detalhes</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">IP</th>
+                        <th width="60" class="text-uppercase text-muted small fw-bold border-0">Info</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for log in logs %}
+                    <tr>
+                        <td class="ps-4 text-muted small">{{ log.timestamp|datetime }}</td>
+                        <td class="fw-semibold text-dark">{{ log.usuario_email }}</td>
+                        <td>
+                            {% set acao_classes = {
+                                'login': 'bg-success-subtle text-success border border-success-subtle',
+                                'logout': 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+                                'criar': 'bg-primary-subtle text-primary border border-primary-subtle',
+                                'editar': 'bg-info-subtle text-info border border-info-subtle',
+                                'excluir': 'bg-danger-subtle text-danger border border-danger-subtle',
+                                'visualizar': 'bg-light text-dark border',
+                                'download': 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+                                'gerar_peticao': 'bg-primary text-white',
+                                'pesquisa': 'bg-info text-white',
+                                'erro': 'bg-danger text-white'
+                            } %}
+                            <span class="badge rounded-pill px-3 {{ acao_classes.get(log.acao, 'bg-secondary') }}">
+                                {{ log.acao }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ log.modulo }}</span>
+                        </td>
+                        <td class="text-truncate text-muted small" style="max-width: 300px;" title="{{ log.detalhes }}">
+                            {{ log.detalhes }}
+                        </td>
+                        <td class="small text-muted font-monospace">{{ log.usuario_ip or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary rounded-circle hover-scale" 
+                                    onclick='verDetalhes({{ log|tojson|safe }})'
+                                    title="Ver detalhes" 
+                                    style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-clipboard-x fs-1 d-block mb-3"></i>
+                                <p class="mb-0">Nenhum registro encontrado.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginação -->
+{% if total_pages > 1 %}
+<nav class="mt-4 fade-in-up delay-300">
+    <ul class="pagination pagination-sm justify-content-center">
+        <li class="page-item {% if page == 1 %}disabled{% endif %}">
+            <a class="page-link rounded-start-pill border-0 shadow-sm" href="{{ url_for('admin_logs', page=page-1, modulo=request.args.get('modulo'), acao=request.args.get('acao')) }}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <li class="page-item active">
+                <span class="page-link border-0 shadow-sm bg-primary border-primary">{{ p }}</span>
+            </li>
+            {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+            <li class="page-item">
+                <a class="page-link border-0 shadow-sm text-muted hover-scale" href="{{ url_for('admin_logs', page=p, modulo=request.args.get('modulo'), acao=request.args.get('acao')) }}">{{ p }}</a>
+            </li>
+            {% elif p == 4 or p == total_pages - 3 %}
+            <li class="page-item disabled"><span class="page-link border-0 shadow-sm">...</span></li>
+            {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+            <a class="page-link rounded-end-pill border-0 shadow-sm" href="{{ url_for('admin_logs', page=page+1, modulo=request.args.get('modulo'), acao=request.args.get('acao')) }}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="detalhesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-info-circle me-2"></i>Detalhes do Log</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 pb-4" id="detalhesContent">
+                <!-- Carregado via JavaScript -->
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function verDetalhes(log) {
+    const content = document.getElementById('detalhesContent');
+    const acaoClasses = {
+        'login': 'bg-success-subtle text-success border border-success-subtle',
+        'logout': 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+        'criar': 'bg-primary-subtle text-primary border border-primary-subtle',
+        'editar': 'bg-info-subtle text-info border border-info-subtle',
+        'excluir': 'bg-danger-subtle text-danger border border-danger-subtle',
+        'visualizar': 'bg-light text-dark border',
+        'download': 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+        'gerar_peticao': 'bg-primary text-white',
+        'pesquisa': 'bg-info text-white',
+        'erro': 'bg-danger text-white'
+    };
+
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="text-muted d-block small fw-bold text-uppercase">Data/Hora</label>
+                <strong class="text-dark">${log.timestamp}</strong>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted d-block small fw-bold text-uppercase">Usuário</label>
+                <strong class="text-dark">${log.usuario_email}</strong>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted d-block small fw-bold text-uppercase">Ação</label>
+                <span class="badge rounded-pill px-3 ${acaoClasses[log.acao] || 'bg-secondary'}">${log.acao}</span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted d-block small fw-bold text-uppercase">Recurso</label>
+                <strong class="text-dark">${log.modulo}</strong>
+            </div>
+            <div class="col-12 mb-3">
+                <label class="text-muted d-block small fw-bold text-uppercase">Detalhes</label>
+                <p class="mb-0 bg-light p-3 rounded border">${log.detalhes || '-'}</p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted d-block small fw-bold text-uppercase">Endereço IP</label>
+                <code class="text-primary">${log.usuario_ip || '-'}</code>
+            </div>
+        </div>
+        <hr>
+        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-code-slash me-2"></i>Dados Técnicos (JSON)</h6>
+        <pre class="bg-dark text-light p-3 rounded small"><code>${JSON.stringify(log, null, 2)}</code></pre>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('detalhesModal'));
+    modal.show();
+}
+
+function exportarLogs() {
+    // Obter parâmetros atuais da URL para manter os filtros
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // Definir formato de exportação (padrão CSV)
+    searchParams.set('formato', 'csv');
+    
+    // Construir URL de exportação
+    const exportUrl = `{{ url_for('admin_logs_exportar') }}?${searchParams.toString()}`;
+    
+    if (typeof Toast !== 'undefined') Toast.info('Iniciando download dos logs...');
+    
+    // Iniciar download
+    window.location.href = exportUrl;
+}
+
+function limparLogs() {
+    const dias = prompt('Limpar logs com mais de quantos dias? (mínimo 30)', '90');
+    if (!dias || isNaN(dias) || parseInt(dias) < 30) {
+        if (typeof Toast !== 'undefined') Toast.warning('Valor inválido. Mínimo de 30 dias.');
+        return;
+    }
+
+    if (confirm(`Tem certeza que deseja limpar logs com mais de ${dias} dias? Esta ação não pode ser desfeita.`)) {
+        if (typeof Toast !== 'undefined') Toast.info(`Processando limpeza...`);
+        
+        fetch('{{ url_for("admin_logs_limpar") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ dias: parseInt(dias) })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Toast !== 'undefined') Toast.success(data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                if (typeof Toast !== 'undefined') Toast.error(data.error || 'Erro ao limpar logs');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            if (typeof Toast !== 'undefined') Toast.error('Erro de conexão ao limpar logs');
+        });
+    }
+}
+</script>
+{% endblock %}

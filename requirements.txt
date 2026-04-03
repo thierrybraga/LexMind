@@ -1,0 +1,61 @@
+# ===================================
+# IA Juridica - Dependencias Python
+# ===================================
+
+# === Framework Web ===
+fastapi>=0.109.2
+uvicorn[standard]>=0.27.1
+gunicorn>=21.2.0
+python-multipart>=0.0.9
+
+# === Frontend Flask ===
+flask>=3.0.2
+jinja2>=3.1.3
+
+# === Database ===
+sqlalchemy[asyncio]>=2.0.25
+aiosqlite>=0.19.0
+asyncpg>=0.29.0
+alembic>=1.13.1
+
+# === Autenticacao ===
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.1.2
+
+# === Validacao ===
+pydantic>=2.6.1
+pydantic-settings>=2.1.0
+email-validator>=2.1.0
+
+# === HTTP Client ===
+requests>=2.31.0
+httpx>=0.26.0
+aiohttp>=3.9.3
+
+# === Geracao de Documentos ===
+python-docx>=1.1.0
+reportlab>=4.1.0
+pypdf>=4.0.1
+odfpy>=1.4.1
+
+# === RAG e Embeddings ===
+sentence-transformers>=2.3.1
+numpy>=1.26.4
+chromadb>=0.4.22
+
+# === LLM ===
+openai>=1.12.0
+
+# === Async IO ===
+aiofiles>=23.2.1
+
+# === Utilitarios ===
+python-dotenv>=1.0.1
+pyyaml>=6.0.1
+tenacity>=8.2.3
+structlog>=24.1.0
+holidays>=0.41
+
+# === Seguranca ===
+cryptography>=42.0.2

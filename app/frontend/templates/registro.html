@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastro - {{ app_name }}{% endblock %}
+{% block body_class %}login-page d-flex align-items-center min-vh-100 py-5{% endblock %}
+
+{% block public_content %}
+<div class="container position-relative z-index-100">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-5">
+            
+            <!-- Brand Logo -->
+            <div class="text-center mb-5 fade-in-up">
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-lg mb-3 hover-scale" style="width: 80px; height: 80px;">
+                    <i class="bi bi-briefcase-fill fs-1"></i>
+                </div>
+                <h2 class="fw-bold text-primary-900 mb-1">IA Jurídica</h2>
+                <p class="text-muted">Crie sua conta profissional</p>
+            </div>
+
+            <div class="card shadow-xl border-0 fade-in-up delay-100 rounded-4 backdrop-blur">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold text-primary">Novo Cadastro</h4>
+                        <p class="text-muted small">Preencha seus dados para começar</p>
+                    </div>
+
+                        <!-- Registration Form -->
+                        <form method="POST" action="{{ url_for('registro') }}" id="formRegistro" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-uppercase text-muted" for="regNome">Nome Completo <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-person text-muted"></i></span>
+                                    <input type="text" class="form-control bg-light border-start-0 rounded-end-pill" id="regNome" name="nome" placeholder="Seu nome completo" required autocomplete="name">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-uppercase text-muted" for="regEmail">Email <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-envelope text-muted"></i></span>
+                                    <input type="email" class="form-control bg-light border-start-0 rounded-end-pill" id="regEmail" name="email" placeholder="seu@email.com" required autocomplete="email">
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-uppercase text-muted" for="regOab">OAB</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-card-text text-muted"></i></span>
+                                        <input type="text" class="form-control bg-light border-start-0 rounded-end-pill" id="regOab" name="oab" placeholder="UF 123456">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-uppercase text-muted" for="regTelefone">Telefone</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-phone text-muted"></i></span>
+                                        <input type="tel" class="form-control bg-light border-start-0 rounded-end-pill" id="regTelefone" name="telefone" placeholder="(11) 99999-9999" data-mask="telefone">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-uppercase text-muted" for="senha">Senha <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-lock text-muted"></i></span>
+                                    <input type="password" class="form-control bg-light border-start-0 ps-0 border-end-0" name="senha" id="senha" placeholder="Min. 6 caracteres" required minlength="6" autocomplete="new-password">
+                                    <button class="btn btn-light border border-start-0 rounded-end-pill text-muted" type="button" onclick="togglePassword(this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="password-strength mt-2"><div class="bar" id="strengthBar"></div></div>
+                                <div class="form-text small" id="strengthText"></div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label small fw-semibold text-uppercase text-muted" for="confirmar_senha">Confirmar Senha <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-lock-fill text-muted"></i></span>
+                                    <input type="password" class="form-control bg-light border-start-0 ps-0 border-end-0" name="confirmar_senha" id="confirmar_senha" placeholder="Repita a senha" required autocomplete="new-password">
+                                    <button class="btn btn-light border border-start-0 rounded-end-pill text-muted" type="button" onclick="togglePassword(this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text text-danger d-none mt-1" id="senhaMatchError">
+                                    <i class="bi bi-exclamation-circle me-1"></i>As senhas não coincidem
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="termos" required>
+                                    <label class="form-check-label small text-muted" for="termos">
+                                        Li e concordo com os <a href="#" data-bs-toggle="modal" data-bs-target="#modalTermos" class="text-primary text-decoration-none fw-semibold">Termos de Uso</a>
+                                        e <a href="#" data-bs-toggle="modal" data-bs-target="#modalPrivacidade" class="text-primary text-decoration-none fw-semibold">Política de Privacidade</a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm mb-3 hover-scale transition-all">
+                                <i class="bi bi-person-plus me-2"></i>Criar Conta
+                            </button>
+                            
+                            <div class="text-center">
+                                <span class="text-muted small">Já tem conta?</span>
+                                <a href="{{ url_for('login') }}" class="text-decoration-none fw-semibold ms-1 text-primary">Entrar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center mt-4 fade-in-up delay-200">
+                    <small class="text-muted d-block mb-1">
+                        <i class="bi bi-shield-lock-fill me-1"></i>Ambiente Seguro & Criptografado
+                    </small>
+                    <small class="text-muted opacity-75" style="font-size: 0.75rem;">
+                        &copy; {{ current_year }} IA Jurídica
+                    </small>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Termos -->
+<div class="modal fade" id="modalTermos" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-file-text me-2"></i>Termos de Uso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body px-4 pb-4">
+                <p class="text-muted mb-3">Este sistema de IA Jurídica é uma ferramenta auxiliar para profissionais do Direito.</p>
+                <div class="alert alert-warning border-0 rounded-3 shadow-sm d-flex align-items-start">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 mt-1"></i>
+                    <div>
+                        <h6 class="alert-heading fw-bold">IMPORTANTE</h6>
+                        <ul class="mb-0 ps-3 small">
+                            <li>Este sistema NÃO substitui a análise e parecer de advogado habilitado.</li>
+                            <li>Todas as informações geradas devem ser verificadas pelo usuário.</li>
+                            <li>O sistema pode apresentar erros ou informações desatualizadas.</li>
+                            <li>O usuário é responsável pelo uso das informações geradas.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">Entendi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const senhaInput = document.getElementById('senha');
+const confirmarInput = document.getElementById('confirmar_senha');
+const strengthBar = document.getElementById('strengthBar');
+const strengthText = document.getElementById('strengthText');
+const matchError = document.getElementById('senhaMatchError');
+
+const strengthLabels = ['', 'Fraca', 'Média', 'Forte'];
+const strengthClasses = ['', 'bg-danger', 'bg-warning', 'bg-success'];
+
+function togglePassword(btn) {
+    const input = btn.previousElementSibling;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+}
+
+senhaInput.addEventListener('input', function() {
+    const val = this.value;
+    let strength = 0;
+    if(val.length >= 6) strength = 1;
+    if(val.length >= 8 && /[A-Z]/.test(val)) strength = 2;
+    if(val.length >= 10 && /[A-Z]/.test(val) && /[0-9]/.test(val)) strength = 3;
+
+    strengthBar.className = 'bar'; // Reset
+    strengthBar.style.width = (strength * 33.3) + '%';
+    
+    // Remove old classes
+    strengthBar.classList.remove('bg-danger', 'bg-warning', 'bg-success');
+    
+    if (strength > 0) {
+        strengthBar.classList.add(strengthClasses[strength]);
+        strengthText.textContent = strengthLabels[strength];
+        strengthText.className = 'form-text small fw-bold ' + (strength === 1 ? 'text-danger' : strength === 2 ? 'text-warning' : 'text-success');
+    } else {
+        strengthText.textContent = '';
+    }
+    checkMatch();
+});
+
+confirmarInput.addEventListener('input', checkMatch);
+
+function checkMatch() {
+    if (confirmarInput.value && senhaInput.value !== confirmarInput.value) {
+        matchError.classList.remove('d-none');
+        confirmarInput.classList.add('is-invalid');
+    } else {
+        matchError.classList.add('d-none');
+        confirmarInput.classList.remove('is-invalid');
+    }
+}
+
+// Form validation integration with Bootstrap
+(() => {
+  'use strict'
+  const forms = document.querySelectorAll('.needs-validation')
+  Array.from(forms).forEach(form => {
+    form.addEventListener('submit', event => {
+      if (!form.checkValidity() || (senhaInput.value !== confirmarInput.value)) {
+        event.preventDefault()
+        event.stopPropagation()
+        if (typeof Toast !== 'undefined') {
+             Toast.error('Por favor, verifique os campos inválidos.');
+        }
+      }
+      form.classList.add('was-validated')
+    }, false)
+  })
+})()
+</script>
+
+<style>
+.password-strength {
+    height: 4px;
+    background-color: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.password-strength .bar {
+    height: 100%;
+    width: 0;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+</style>
+{% endblock %}

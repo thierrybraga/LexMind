@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Pesquisa Jurídica - {{ app_name }}{% endblock %}
+
+{% block content %}
+<!-- Sticky Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-body-tertiary pt-3 pb-2 fade-in-up" style="top: 0; z-index: 1000; backdrop-filter: blur(10px); background-color: rgba(var(--bs-body-bg-rgb), 0.8) !important;">
+    <div>
+        <h2 class="fw-bold text-primary-900 mb-0">
+            <i class="bi bi-search me-2 text-primary"></i>Pesquisa Jurídica
+        </h2>
+        <p class="text-muted small mb-0">Busca semântica em jurisprudência, doutrina e legislação</p>
+    </div>
+    <div class="d-none d-md-block">
+        <kbd class="bg-light text-muted border px-2 py-1 rounded shadow-sm" style="font-size:0.75rem;">Ctrl+K</kbd>
+        <span class="text-muted small ms-1">para focar</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Search Form (Sidebar) -->
+    <div class="col-lg-4 fade-in-up delay-100">
+        <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: calc(var(--navbar-height) + 5rem); z-index: 10;">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
+                <h6 class="fw-bold text-primary mb-0"><i class="bi bi-funnel me-2"></i>Filtros de Pesquisa</h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('pesquisa') }}" id="formPesquisa" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-uppercase text-muted">Termo da Pesquisa <span class="text-danger">*</span></label>
+                        <textarea class="form-control bg-light border-0 rounded-3" name="query" rows="4" placeholder="Digite sua pesquisa jurídica..." required style="resize: none;">{{ query }}</textarea>
+                        <div class="form-text small"><i class="bi bi-lightbulb me-1"></i>Ex: "nulidade de citação por hora certa"</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-uppercase text-muted">Tribunal</label>
+                        <select class="form-select bg-light border-0 rounded-pill" name="tribunal">
+                            <option value="">Todos os tribunais</option>
+                            {% for t in tribunais %}
+                            <option value="{{ t }}" {{ 'selected' if request.form.get('tribunal') == t else '' }}>{{ t }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-uppercase text-muted">Área do Direito</label>
+                        <select class="form-select bg-light border-0 rounded-pill" name="area">
+                            <option value="">Todas as áreas</option>
+                            {% for a in areas %}
+                            <option value="{{ a }}" {{ 'selected' if request.form.get('area') == a else '' }}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-uppercase text-muted">Ano Início</label>
+                            <input type="number" class="form-control bg-light border-0 rounded-pill" name="ano_inicio" min="1900" max="2026" placeholder="2020" value="{{ request.form.get('ano_inicio', '') }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-uppercase text-muted">Ano Fim</label>
+                            <input type="number" class="form-control bg-light border-0 rounded-pill" name="ano_fim" min="1900" max="2026" placeholder="2026" value="{{ request.form.get('ano_fim', '') }}">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm hover-scale transition-all" id="btnPesquisar">
+                        <i class="bi bi-search me-2"></i>Pesquisar
+                    </button>
+                </form>
+
+                <hr class="my-4 border-light">
+
+                <!-- Quick AI Query -->
+                <form method="POST" action="{{ url_for('pesquisa_ia') }}" id="formIA">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-gradient">
+                            <i class="bi bi-robot me-1 text-primary"></i>Perguntar à IA
+                        </label>
+                        <textarea class="form-control bg-primary-subtle border-0 rounded-3" name="pergunta" rows="2" placeholder="Faça uma pergunta jurídica direta..." style="resize: none;"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary w-100 rounded-pill fw-semibold hover-scale">
+                        <i class="bi bi-chat-dots me-2"></i>Consultar IA
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="col-lg-8 fade-in-up delay-200">
+        {% if resultados %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">
+                Encontrados <strong>{{ resultados|length }}</strong> resultados para "<em>{{ query }}</em>"
+            </span>
+            <div class="btn-group shadow-sm rounded-pill" role="group">
+                <input type="radio" class="btn-check" name="viewMode" id="viewList" autocomplete="off" checked onchange="toggleView('list')">
+                <label class="btn btn-outline-light text-dark border-0 px-3 py-1" for="viewList"><i class="bi bi-list"></i></label>
+                
+                <input type="radio" class="btn-check" name="viewMode" id="viewGrid" autocomplete="off" onchange="toggleView('grid')">
+                <label class="btn btn-outline-light text-dark border-0 px-3 py-1" for="viewGrid"><i class="bi bi-grid-3x3-gap"></i></label>
+            </div>
+        </div>
+
+        <div id="resultadosContainer" class="d-flex flex-column gap-3">
+            {% for res in resultados %}
+            <div class="card border-0 shadow-sm rounded-4 hover-shadow transition-all result-item fade-in-up" style="animation-delay: {{ loop.index * 50 }}ms;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title fw-bold text-primary mb-1">
+                            <a href="#" class="text-decoration-none stretched-link">{{ res.titulo }}</a>
+                        </h5>
+                        <span class="badge bg-light text-muted border rounded-pill">{{ res.data }}</span>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <span class="badge bg-primary-subtle text-primary rounded-pill me-1"><i class="bi bi-bank me-1"></i>{{ res.tribunal }}</span>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill"><i class="bi bi-tag me-1"></i>{{ res.tipo }}</span>
+                    </div>
+                    
+                    <p class="card-text text-muted small mb-0 line-clamp-3">
+                        {{ res.conteudo }}
+                    </p>
+                    
+                    <div class="d-flex gap-2 mt-3 position-relative" style="z-index: 2;">
+                        <button class="btn btn-sm btn-light rounded-pill border shadow-sm btn-copy-ementa" title="Copiar Conteúdo" data-index="{{ loop.index0 }}">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light rounded-pill border shadow-sm" title="Salvar Favorito">
+                            <i class="bi bi-bookmark"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <script>
+            window.ementas = [
+                {% for res in resultados %}
+                {{ res.conteudo | tojson }},
+                {% endfor %}
+            ];
+        </script>
+        
+        {% elif query %}
+        <div class="text-center py-5 fade-in-up">
+            <div class="bg-light rounded-circle p-4 d-inline-block mb-3 shadow-sm">
+                <i class="bi bi-search fs-1 text-muted"></i>
+            </div>
+            <h5 class="fw-bold text-muted">Nenhum resultado encontrado</h5>
+            <p class="text-muted small">Tente refinar seus termos de pesquisa ou filtros.</p>
+        </div>
+        {% else %}
+        <div class="text-center py-5 fade-in-up">
+            <div class="bg-light rounded-circle p-4 d-inline-block mb-3 shadow-sm">
+                <i class="bi bi-arrow-left fs-1 text-muted"></i>
+            </div>
+            <h5 class="fw-bold text-muted">Comece sua pesquisa</h5>
+            <p class="text-muted small">Utilize os filtros ao lado para buscar jurisprudência.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle View Mode
+    function toggleView(mode) {
+        const container = document.getElementById('resultadosContainer');
+        const items = container.querySelectorAll('.result-item');
+        
+        if (mode === 'grid') {
+            container.classList.remove('d-flex', 'flex-column', 'gap-3');
+            container.classList.add('row', 'g-3');
+            items.forEach(item => {
+                item.classList.add('col-md-6');
+            });
+        } else {
+            container.classList.remove('row', 'g-3');
+            container.classList.add('d-flex', 'flex-column', 'gap-3');
+            items.forEach(item => {
+                item.classList.remove('col-md-6');
+            });
+        }
+    }
+
+    // Copy to Clipboard
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-copy-ementa');
+        if (btn) {
+            const index = btn.getAttribute('data-index');
+            const text = window.ementas && window.ementas[index];
+            
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    if (typeof Toast !== 'undefined') Toast.success('Texto copiado para a área de transferência!');
+                }).catch(err => {
+                    console.error('Erro ao copiar:', err);
+                    if (typeof Toast !== 'undefined') Toast.error('Erro ao copiar texto.');
+                });
+            }
+        }
+    });
+
+    // Form Validation
+    (() => {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (typeof Toast !== 'undefined') Toast.warning('Preencha os campos obrigatórios.');
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+    
+    // Ctrl+K Shortcut
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            document.querySelector('textarea[name="query"]').focus();
+        }
+    });
+</script>
+{% endblock %}

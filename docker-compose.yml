@@ -1,0 +1,235 @@
+
+services:
+  # === Nginx Reverse Proxy ===
+  nginx:
+    image: nginx:alpine
+    container_name: ia-juridica-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./app/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ia-juridica-network
+    restart: unless-stopped
+
+  # === Backend FastAPI ===
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ia-juridica-backend
+    # Expor porta 8000 para debug e testes diretos
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app/backend:/app/app/backend
+      - ./app/scripts:/app/app/scripts
+      - ./app/data:/app/app/data
+      - ./app/logs:/app/app/logs
+    env_file:
+      - ./app/.env
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/${POSTGRES_DB:-ia_juridica}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - CNJ_API_KEY=${CNJ_API_KEY}
+      - WHATSAPP_API_URL=http://evo-api-2:8080
+      - WHATSAPP_API_KEY=429683C4C977415CAAFCCE10F7D57E11
+      - WHATSAPP_INSTANCE_NAME=ia-juridica
+    depends_on:
+      - db
+    networks:
+      - ia-juridica-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === Frontend Flask ===
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ia-juridica-frontend
+    command: ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
+    # ports removidos: acesso apenas via nginx
+    volumes:
+      - ./app/frontend:/app/app/frontend
+    environment:
+      - FLASK_APP=app/frontend/app.py
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - API_BASE_URL=http://backend:8000/api
+      - BACKEND_URL=http://backend:8000
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - ia-juridica-network
+    restart: unless-stopped
+
+  # === PostgreSQL ===
+  db:
+    image: postgres:15-alpine
+    container_name: ia_juridica_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_DB: ${POSTGRES_DB:-ia_juridica}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./app/scripts/init-airflow-db.sh:/docker-entrypoint-initdb.d/init-airflow-db.sh
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ia-juridica-network
+
+  # === Redis (Cache/Celery) ===
+  redis:
+    image: redis:7-alpine
+    container_name: ia-juridica-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - ia-juridica-network
+    restart: unless-stopped
+    # profiles:
+    #   - production
+
+  # === Airflow Init (cria DB e usuário admin) ===
+  airflow-init:
+    build:
+      context: .
+      dockerfile: app/airflow/Dockerfile
+    container_name: ia-juridica-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname IAJuridica \
+          --role Admin \
+          --email admin@ia-juridica.local || true
+        airflow connections add ia_juridica_api \
+          --conn-type http \
+          --conn-host backend \
+          --conn-port 8000 \
+          --conn-schema http \
+          --conn-login airflow@ia-juridica.local \
+          --conn-password airflow-service-password || true
+        airflow connections add cnj_datajud \
+          --conn-type http \
+          --conn-host api-publica.datajud.cnj.jus.br \
+          --conn-schema https \
+          --conn-password "$${CNJ_API_KEY}" || true
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - CNJ_API_KEY=${CNJ_API_KEY:-}
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./app/airflow/dags:/opt/airflow/dags
+      - ./app/airflow/plugins:/opt/airflow/plugins
+      - ./app/airflow/logs:/opt/airflow/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ia-juridica-network
+
+  # === Airflow Webserver ===
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: app/airflow/Dockerfile
+    container_name: ia-juridica-airflow-webserver
+    command: airflow webserver --port 8080
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - AIRFLOW__CORE__DEFAULT_TIMEZONE=America/Sao_Paulo
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./app/airflow/dags:/opt/airflow/dags
+      - ./app/airflow/plugins:/opt/airflow/plugins
+      - ./app/airflow/logs:/opt/airflow/logs
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - ia-juridica-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # === Airflow Scheduler ===
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: app/airflow/Dockerfile
+    container_name: ia-juridica-airflow-scheduler
+    command: airflow scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__DEFAULT_TIMEZONE=America/Sao_Paulo
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./app/airflow/dags:/opt/airflow/dags
+      - ./app/airflow/plugins:/opt/airflow/plugins
+      - ./app/airflow/logs:/opt/airflow/logs
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - ia-juridica-network
+    restart: unless-stopped
+
+# === Networks ===
+networks:
+  ia-juridica-network:
+    driver: bridge
+
+# === Volumes ===
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local

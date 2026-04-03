@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+
+{% block title %}Processo {{ processo.numero }} - IA Jurídica{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 fade-in-up">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2 small">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('processos') }}" class="text-decoration-none">Processos</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Detalhes</li>
+                </ol>
+            </nav>
+            <h4 class="mb-1 fw-bold d-flex align-items-center text-gradient">
+                <i class="bi bi-folder2-open text-primary me-2"></i>
+                <span class="font-monospace">{{ processo.numero }}</span>
+                {% if processo.status == 'ativo' %}
+                <span class="badge bg-success-subtle text-success ms-3 fs-6 rounded-pill fw-normal border border-success-subtle">Ativo</span>
+                {% elif processo.status == 'arquivado' %}
+                <span class="badge bg-secondary-subtle text-secondary ms-3 fs-6 rounded-pill fw-normal border border-secondary-subtle">Arquivado</span>
+                {% else %}
+                <span class="badge bg-warning-subtle text-warning-emphasis ms-3 fs-6 rounded-pill fw-normal border border-warning-subtle">{{ processo.status|title }}</span>
+                {% endif %}
+            </h4>
+        </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <button class="btn btn-outline-secondary shadow-sm hover-scale" onclick="atualizarCNJ(this)">
+                <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+            </button>
+            <a href="{{ url_for('peticao_nova') }}?processo_id={{ processo.id }}" class="btn btn-primary shadow-sm hover-scale">
+                <i class="bi bi-plus-lg me-1"></i> Nova Petição
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8 fade-in-up" style="animation-delay: 100ms;">
+            <!-- Dados do Processo -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-info-circle me-2"></i>Dados Gerais</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Tribunal</label>
+                            <p class="mb-0 fw-medium">{{ processo.tribunal or '-' }}</p>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Vara/Órgão</label>
+                            <p class="mb-0">{{ processo.vara or '-' }}</p>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Comarca</label>
+                            <p class="mb-0">{{ processo.comarca or '-' }}</p>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Área do Direito</label>
+                            <p class="mb-0">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2">
+                                    {{ processo.area_direito|default('Não definida')|title }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Classe</label>
+                            <p class="mb-0 text-truncate" title="{{ processo.classe }}">{{ processo.classe or '-' }}</p>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Assunto</label>
+                            <p class="mb-0 text-truncate" title="{{ processo.assunto }}">{{ processo.assunto or '-' }}</p>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Valor da Causa</label>
+                            <p class="mb-0 fw-bold text-success">
+                                {% if processo.valor_causa %}
+                                R$ {{ "%.2f"|format(processo.valor_causa) }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <label class="text-muted small fw-bold text-uppercase">Distribuição</label>
+                            <p class="mb-0">{{ processo.data_distribuicao or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 200ms;">
+                <div class="card-header bg-white border-bottom-0 pb-0 pt-3 px-4 rounded-top-4">
+                    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active fw-medium" data-bs-toggle="tab" data-bs-target="#movimentacoes">
+                                <i class="bi bi-clock-history me-2"></i>Movimentações
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-medium" data-bs-toggle="tab" data-bs-target="#peticoes">
+                                <i class="bi bi-file-earmark-text me-2"></i>Petições
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-medium" data-bs-toggle="tab" data-bs-target="#documentos">
+                                <i class="bi bi-files me-2"></i>Documentos
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-4">
+                    <div class="tab-content">
+                        <!-- Movimentações -->
+                        <div class="tab-pane fade show active" id="movimentacoes">
+                            <div id="movimentacoes-loading" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="text-muted mt-2">Carregando movimentações...</p>
+                            </div>
+                            <div id="movimentacoes-lista" class="timeline p-2 d-none">
+                                <!-- Preenchido via JS -->
+                            </div>
+                            <div id="movimentacoes-empty" class="text-center py-5 d-none">
+                                <div class="mb-3">
+                                    <i class="bi bi-clock-history display-4 text-muted opacity-25"></i>
+                                </div>
+                                <p class="text-muted mb-0">Nenhuma movimentação registrada.</p>
+                                <button class="btn btn-sm btn-outline-primary mt-3 rounded-pill" onclick="atualizarCNJ(this)">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Sincronizar Agora
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Petições -->
+                        <div class="tab-pane fade" id="peticoes">
+                            <div id="peticoes-loading" class="text-center py-5 d-none">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="text-muted mt-2">Carregando petições...</p>
+                            </div>
+                            <div id="peticoes-lista" class="row g-3 d-none">
+                                <!-- Preenchido via JS -->
+                            </div>
+                            <div id="peticoes-empty" class="text-center py-5 d-none">
+                                <div class="mb-3">
+                                    <i class="bi bi-file-earmark-text display-4 text-muted opacity-25"></i>
+                                </div>
+                                <p class="text-muted mt-3">Nenhuma petição vinculada a este processo.</p>
+                                <a href="{{ url_for('peticao_nova') }}?processo_id={{ processo.id }}" class="btn btn-sm btn-primary mt-2 rounded-pill shadow-sm">
+                                    <i class="bi bi-plus-lg me-1"></i>Criar Petição
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Documentos -->
+                        <div class="tab-pane fade" id="documentos">
+                            <div id="documentos-loading" class="text-center py-5 d-none">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="text-muted mt-2">Carregando documentos...</p>
+                            </div>
+                            <div id="documentos-lista" class="list-group list-group-flush rounded-4 d-none">
+                                <!-- Preenchido via JS -->
+                            </div>
+                            <div id="documentos-empty" class="text-center py-5 d-none">
+                                <div class="mb-3">
+                                    <i class="bi bi-files display-4 text-muted opacity-25"></i>
+                                </div>
+                                <p class="text-muted mt-3">Nenhum documento anexado.</p>
+                                <button class="btn btn-sm btn-outline-primary mt-2 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                    <i class="bi bi-upload me-1"></i> Upload de Documento
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4 fade-in-up" style="animation-delay: 150ms;">
+            <!-- Partes -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-people me-2"></i>Partes</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush rounded-bottom-4">
+                        <!-- Autor -->
+                        <div class="list-group-item p-4 border-bottom-0">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">Autor</span>
+                            </div>
+                            <h6 class="mb-1 fw-bold text-dark">{{ processo.autor or '-' }}</h6>
+                            {% if processo.autor_cpf_cnpj %}
+                            <small class="text-muted d-block mb-3 font-monospace bg-light d-inline-block px-2 rounded">{{ processo.autor_cpf_cnpj }}</small>
+                            {% endif %}
+                            
+                            {% if processo.autor_advogado %}
+                            <div class="bg-light p-3 rounded-3 border mt-2">
+                                <small class="d-block text-muted mb-1 fw-bold" style="font-size:0.7rem;">ADVOGADO(A)</small>
+                                <div class="fw-medium text-dark">{{ processo.autor_advogado }}</div>
+                                {% if processo.autor_oab %}
+                                <div class="text-muted small mt-1">OAB: {{ processo.autor_oab }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Separator -->
+                        <div class="list-group-item bg-light py-2 text-center text-muted small border-top border-bottom fw-bold">
+                            VS
+                        </div>
+
+                        <!-- Réu -->
+                        <div class="list-group-item p-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2">Réu</span>
+                            </div>
+                            <h6 class="mb-1 fw-bold text-dark">{{ processo.reu or '-' }}</h6>
+                            {% if processo.reu_cpf_cnpj %}
+                            <small class="text-muted d-block mb-3 font-monospace bg-light d-inline-block px-2 rounded">{{ processo.reu_cpf_cnpj }}</small>
+                            {% endif %}
+                            
+                            {% if processo.reu_advogado %}
+                            <div class="bg-light p-3 rounded-3 border mt-2">
+                                <small class="d-block text-muted mb-1 fw-bold" style="font-size:0.7rem;">ADVOGADO(A)</small>
+                                <div class="fw-medium text-dark">{{ processo.reu_advogado }}</div>
+                                {% if processo.reu_oab %}
+                                <div class="text-muted small mt-1">OAB: {{ processo.reu_oab }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anotações -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 250ms;">
+                <div class="card-header bg-white py-3 px-4 border-bottom rounded-top-4 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-sticky me-2"></i>Anotações</h6>
+                    <button class="btn btn-sm btn-light rounded-circle shadow-sm" title="Nova anotação">
+                        <i class="bi bi-plus-lg text-primary"></i>
+                    </button>
+                </div>
+                <div class="card-body p-4">
+                    <div class="form-floating mb-3">
+                        <textarea class="form-control bg-light border-0" placeholder="Nota" id="notaTextarea" style="height: 100px"></textarea>
+                        <label for="notaTextarea">Adicione uma nota...</label>
+                    </div>
+                    <div class="d-grid">
+                        <button class="btn btn-sm btn-primary rounded-pill shadow-sm" onclick="salvarNota()">Salvar Nota</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline-item:last-child { border-left-color: transparent !important; }
+.hover-scale { transition: transform 0.2s; }
+.hover-scale:hover { transform: translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const processoNumero = "{{ processo.numero_cnj or processo.numero }}";
+    const processoId = "{{ processo.id }}";
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Carregar movimentações inicialmente (aba ativa)
+        carregarMovimentacoes();
+        
+        // Listeners para as outras abas (Lazy Loading)
+        const tabPeticoes = document.querySelector('button[data-bs-target="#peticoes"]');
+        if (tabPeticoes) {
+            tabPeticoes.addEventListener('shown.bs.tab', function (event) {
+                if (!this.dataset.loaded) {
+                    carregarPeticoes();
+                    this.dataset.loaded = "true";
+                }
+            });
+        }
+        
+        const tabDocumentos = document.querySelector('button[data-bs-target="#documentos"]');
+        if (tabDocumentos) {
+            tabDocumentos.addEventListener('shown.bs.tab', function (event) {
+                if (!this.dataset.loaded) {
+                    carregarDocumentos();
+                    this.dataset.loaded = "true";
+                }
+            });
+        }
+    });
+
+    function carregarMovimentacoes() {
+        const container = document.getElementById('movimentacoes-lista');
+        const loading = document.getElementById('movimentacoes-loading');
+        const empty = document.getElementById('movimentacoes-empty');
+        
+        fetch(`/api/processos/${processoId}/movimentacoes`)
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('d-none');
+                
+                if (data.movimentacoes && data.movimentacoes.length > 0) {
+                    container.innerHTML = data.movimentacoes.map((mov, index) => `
+                        <div class="timeline-item position-relative ps-4 pb-4 border-start border-2 border-light-subtle" style="animation: fadeInUp 0.5s ease forwards ${index * 0.1}s; opacity: 0;">
+                            <div class="position-absolute top-0 start-0 translate-middle rounded-circle bg-white border border-2 border-primary p-1" style="width: 1rem; height: 1rem;"></div>
+                            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">${mov.data}</small>
+                            <div class="card border-0 bg-light mt-1 shadow-sm hover-shadow transition-all">
+                                <div class="card-body p-3">
+                                    <p class="card-text text-dark mb-0">${mov.descricao}</p>
+                                    ${mov.tipo ? `<span class="badge bg-white text-secondary border mt-2 fw-normal">${mov.tipo}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    container.classList.remove('d-none');
+                } else {
+                    empty.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar movimentações:', error);
+                loading.classList.add('d-none');
+                empty.innerHTML = `
+                    <div class="text-center text-danger py-4">
+                        <i class="bi bi-exclamation-circle display-4"></i>
+                        <p class="mt-2">Erro ao carregar movimentações.</p>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="carregarMovimentacoes()">Tentar Novamente</button>
+                    </div>
+                `;
+                empty.classList.remove('d-none');
+                if (window.Toast) Toast.error('Erro ao carregar movimentações.');
+            });
+    }
+
+    function carregarPeticoes() {
+        const container = document.getElementById('peticoes-lista');
+        const loading = document.getElementById('peticoes-loading');
+        const empty = document.getElementById('peticoes-empty');
+        
+        loading.classList.remove('d-none');
+        
+        fetch(`/api/processos/${processoId}/peticoes`)
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('d-none');
+                
+                if (data.peticoes && data.peticoes.length > 0) {
+                    container.innerHTML = data.peticoes.map((pet, index) => `
+                        <div class="col-md-6 col-lg-12 col-xl-6" style="animation: fadeInUp 0.5s ease forwards ${index * 0.1}s; opacity: 0;">
+                            <div class="card h-100 border-0 shadow-sm hover-scale transition-all">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge ${getStatusBadgeClass(pet.status)} rounded-pill">${pet.status}</span>
+                                        <small class="text-muted">${pet.data_criacao}</small>
+                                    </div>
+                                    <h6 class="card-title fw-bold text-truncate" title="${pet.titulo || 'Sem título'}">
+                                        <a href="/peticoes/editar/${pet.id}" class="text-decoration-none text-dark stretched-link">
+                                            ${pet.titulo || 'Sem título'}
+                                        </a>
+                                    </h6>
+                                    <p class="card-text small text-muted text-truncate mb-0">${pet.tipo || 'Tipo não definido'}</p>
+                                </div>
+                                <div class="card-footer bg-white border-top-0 pt-0 pb-3 px-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-circle bg-light text-primary small fw-bold" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                            ${pet.autor ? pet.autor.charAt(0).toUpperCase() : 'U'}
+                                        </div>
+                                        <small class="text-muted text-truncate" style="max-width: 150px;">${pet.autor || 'Usuário'}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    container.classList.remove('d-none');
+                } else {
+                    empty.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar petições:', error);
+                loading.classList.add('d-none');
+                empty.innerHTML = '<p class="text-danger">Erro ao carregar petições.</p>';
+                empty.classList.remove('d-none');
+                if (window.Toast) Toast.error('Erro ao carregar petições.');
+            });
+    }
+
+    function carregarDocumentos() {
+        const container = document.getElementById('documentos-lista');
+        const loading = document.getElementById('documentos-loading');
+        const empty = document.getElementById('documentos-empty');
+        
+        loading.classList.remove('d-none');
+        
+        fetch(`/api/processos/${processoId}/documentos`)
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('d-none');
+                
+                if (data.documentos && data.documentos.length > 0) {
+                    container.innerHTML = data.documentos.map((doc, index) => `
+                        <div class="list-group-item list-group-item-action p-3 border-start-0 border-end-0 border-top-0 d-flex align-items-center justify-content-between hover-bg-light transition-all" style="animation: fadeInUp 0.5s ease forwards ${index * 0.05}s; opacity: 0;">
+                            <div class="d-flex align-items-center overflow-hidden">
+                                <div class="rounded-3 bg-light p-2 me-3 text-primary">
+                                    <i class="bi ${getFileIcon(doc.tipo)} fs-5"></i>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <h6 class="mb-0 text-truncate fw-medium text-dark" title="${doc.nome}">${doc.nome}</h6>
+                                    <small class="text-muted">${formatBytes(doc.tamanho)} • ${doc.data_upload}</small>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
+                                    <li><a class="dropdown-item" href="/documentos/download/${doc.id}"><i class="bi bi-download me-2"></i>Baixar</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="excluirDocumento(${doc.id})"><i class="bi bi-trash me-2"></i>Excluir</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    `).join('');
+                    container.classList.remove('d-none');
+                } else {
+                    empty.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar documentos:', error);
+                loading.classList.add('d-none');
+                empty.innerHTML = '<p class="text-danger">Erro ao carregar documentos.</p>';
+                empty.classList.remove('d-none');
+                if (window.Toast) Toast.error('Erro ao carregar documentos.');
+            });
+    }
+
+    function getStatusBadgeClass(status) {
+        const classes = {
+            'rascunho': 'bg-secondary-subtle text-secondary',
+            'revisão': 'bg-warning-subtle text-warning-emphasis',
+            'aprovado': 'bg-success-subtle text-success',
+            'protocolado': 'bg-primary-subtle text-primary'
+        };
+        return classes[status?.toLowerCase()] || 'bg-light text-dark';
+    }
+
+    function getFileIcon(mimeType) {
+        if (!mimeType) return 'bi-file-earmark';
+        if (mimeType.includes('pdf')) return 'bi-file-earmark-pdf';
+        if (mimeType.includes('word') || mimeType.includes('officedocument')) return 'bi-file-earmark-word';
+        if (mimeType.includes('image')) return 'bi-file-earmark-image';
+        return 'bi-file-earmark-text';
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    }
+
+    function atualizarCNJ(btn) {
+        if(!processoNumero) {
+            Toast.error('Número do processo inválido.');
+            return;
+        }
+
+        if(btn) UI.setLoading(btn, true, 'Sincronizando...');
+        
+        fetch(`/cnj/sync/${encodeURIComponent(processoNumero)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (response.ok) {
+                Toast.success(data.message || 'Processo sincronizado com sucesso!');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                throw new Error(data.error || 'Erro ao sincronizar.');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            Toast.error(error.message || 'Erro ao sincronizar processo. Tente novamente.');
+            if(btn) UI.setLoading(btn, false);
+        });
+    }
+
+    function salvarNota() {
+        const txt = document.getElementById('notaTextarea').value;
+        if(!txt.trim()) return;
+        
+        Toast.success('Nota salva com sucesso! (Simulação)');
+        document.getElementById('notaTextarea').value = '';
+    }
+
+    function excluirDocumento(id) {
+        if (!confirm('Tem certeza que deseja excluir este documento?')) return;
+        
+        fetch(`/api/documentos/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                if (window.Toast) Toast.success('Documento excluído.');
+                carregarDocumentos();
+            } else {
+                if (window.Toast) Toast.error('Erro ao excluir documento.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao excluir documento:', error);
+            if (window.Toast) Toast.error('Erro ao excluir documento.');
+        });
+    }
+</script>
+{% endblock %}

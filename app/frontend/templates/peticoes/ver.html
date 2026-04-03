@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Petição - {{ peticao.titulo or 'Visualizar' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4 fade-in-up">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('peticoes') }}" class="text-decoration-none">Petições</a></li>
+                    <li class="breadcrumb-item active">Visualizar</li>
+                </ol>
+            </nav>
+            <h4 class="mb-0 fw-bold text-gradient">
+                <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                {{ peticao.titulo or 'Petição' }}
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('peticao_editar', id=peticao.id) }}" class="btn btn-outline-primary shadow-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            <div class="btn-group shadow-sm">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-download me-1"></i>Exportar
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
+                    <li><a class="dropdown-item small" href="#" onclick="exportarPeticao(this, 'docx')"><i class="bi bi-file-earmark-word text-primary me-2"></i>Word (.docx)</a></li>
+                    <li><a class="dropdown-item small" href="#" onclick="exportarPeticao(this, 'pdf')"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Petition Content -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 100ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-text-left me-2"></i>Conteúdo da Petição</h6>
+                    <button class="btn btn-sm btn-light text-muted" onclick="copiarConteudo()" title="Copiar para área de transferência">
+                        <i class="bi bi-clipboard me-1"></i>Copiar
+                    </button>
+                </div>
+                <div class="card-body p-4">
+                    <div class="p-4 bg-light rounded-3 border">
+                        <div id="peticaoConteudo" class="peticao-texto" style="white-space: pre-wrap; line-height: 2; font-size: 1.1rem; font-family: 'Times New Roman', serif; text-align: justify; color: #2c3e50;">{{ peticao.conteudo or 'Conteúdo não disponível.' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal Foundation -->
+            {% if peticao.fundamentacao %}
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 200ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-mortarboard me-2"></i>Fundamentação Legal</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="p-3 bg-light-subtle rounded-3" style="white-space: pre-wrap; line-height: 1.8; font-size: 0.95rem;">{{ peticao.fundamentacao }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Jurisprudences -->
+            {% if peticao.jurisprudencias %}
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 300ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-bookmark me-2"></i>Jurisprudências Citadas</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush rounded-bottom-4">
+                        {% for juris in peticao.jurisprudencias %}
+                        <div class="list-group-item px-4 py-3 border-light">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 small fw-bold text-dark">{{ juris.tribunal }} - {{ juris.numero }}</h6>
+                                    <p class="text-muted mb-2 small text-truncate-3" style="line-height: 1.6;">{{ juris.ementa[:200] }}...</p>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <small class="text-muted bg-light px-2 py-1 rounded">
+                                            <i class="bi bi-calendar me-1"></i>{{ juris.data }}
+                                        </small>
+                                        <small class="text-muted bg-light px-2 py-1 rounded">
+                                            <i class="bi bi-person me-1"></i>{{ juris.relator }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill ms-3 border border-primary-subtle">{{ (juris.similaridade * 100)|round(1) }}%</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Info -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 150ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-info-circle me-2"></i>Informações</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <table class="table table-borderless table-sm mb-0">
+                        <tr>
+                            <td class="text-muted py-2" style="width:40%">Tipo:</td>
+                            <td class="py-2"><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill">{{ peticao.tipo|replace('_', ' ')|title }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted py-2">Status:</td>
+                            <td class="py-2">
+                                {% if peticao.status == 'rascunho' %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Rascunho</span>
+                                {% elif peticao.status == 'finalizada' %}<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Finalizada</span>
+                                {% elif peticao.status == 'protocolada' %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Protocolada</span>
+                                {% else %}<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">{{ peticao.status|title }}</span>{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted py-2">Área:</td>
+                            <td class="py-2 fw-medium">{{ peticao.area_direito or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted py-2">Criada:</td>
+                            <td class="py-2 small">{{ peticao.created_at|default('', true) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted py-2">Atualizada:</td>
+                            <td class="py-2 small">{{ peticao.updated_at|default('', true) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted py-2">Palavras:</td>
+                            <td class="py-2 fw-bold text-dark"><span id="contadorPalavras">0</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Linked Process -->
+            {% if peticao.processo %}
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 250ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-folder me-2"></i>Processo</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <p class="mb-2"><strong class="small text-muted text-uppercase">Número</strong><br>
+                            <a href="{{ url_for('processo_ver', id=peticao.processo.id) }}" class="text-decoration-none fw-bold text-primary" style="font-family:var(--font-mono,monospace); font-size:0.9rem;">{{ peticao.processo.numero }}</a>
+                        </p>
+                        <p class="mb-2"><strong class="small text-muted text-uppercase">Partes</strong><br>
+                            <small class="fw-medium">{{ peticao.processo.autor }} x {{ peticao.processo.reu }}</small>
+                        </p>
+                        <p class="mb-0"><strong class="small text-muted text-uppercase">Tribunal</strong><br><span class="badge bg-light text-dark border">{{ peticao.processo.tribunal }}</span></p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Parties -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 350ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-people me-2"></i>Partes</h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="mb-3">
+                        <label class="text-muted small fw-bold text-uppercase mb-1">Autor/Requerente</label>
+                        <div class="d-flex align-items-center p-2 bg-light rounded">
+                            <div class="avatar-sm bg-primary-subtle text-primary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-bold small">{{ peticao.autor or '-' }}</p>
+                                {% if peticao.autor_cpf_cnpj %}<small class="text-muted" style="font-size: 0.75rem;">{{ peticao.autor_cpf_cnpj }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-muted small fw-bold text-uppercase mb-1">Réu/Requerido</label>
+                        <div class="d-flex align-items-center p-2 bg-light rounded">
+                            <div class="avatar-sm bg-danger-subtle text-danger rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-bold small">{{ peticao.reu or '-' }}</p>
+                                {% if peticao.reu_cpf_cnpj %}<small class="text-muted" style="font-size: 0.75rem;">{{ peticao.reu_cpf_cnpj }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 450ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-lightning me-2"></i>Ações</h6>
+                </div>
+                <div class="card-body px-4 pb-4 d-grid gap-2">
+                    <a href="{{ url_for('peticao_editar', id=peticao.id) }}" class="btn btn-outline-primary shadow-sm hover-scale">
+                        <i class="bi bi-pencil me-2"></i>Editar Petição
+                    </a>
+                    <button class="btn btn-outline-success shadow-sm hover-scale" onclick="duplicarPeticao()">
+                        <i class="bi bi-copy me-2"></i>Duplicar
+                    </button>
+                    <button class="btn btn-outline-info shadow-sm hover-scale" onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i>Imprimir
+                    </button>
+                    <hr class="my-2 opacity-10">
+                    <button class="btn btn-outline-danger shadow-sm hover-scale" onclick="excluirPeticao()">
+                        <i class="bi bi-trash me-2"></i>Excluir
+                    </button>
+                </div>
+            </div>
+
+            <!-- Version History -->
+            {% if peticao.versoes %}
+            <div class="card border-0 shadow-sm rounded-4 fade-in-up" style="animation-delay: 550ms;">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-clock-history me-2"></i>Versões</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush rounded-bottom-4">
+                        {% for versao in peticao.versoes[:5] %}
+                        <a href="#" class="list-group-item list-group-item-action px-4 py-3 border-light" onclick="verVersao({{ versao.id }})">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill">v{{ versao.numero }}</span>
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ versao.data }}</small>
+                            </div>
+                            <small class="text-muted d-block text-truncate">{{ versao.descricao }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Version Modal -->
+<div class="modal fade" id="modalVersao" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-clock-history me-2"></i>Versão Anterior</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div id="versaoConteudo" class="p-4 bg-white rounded-3 shadow-sm" style="white-space: pre-wrap; font-family: 'Times New Roman', serif; line-height: 1.8; text-align: justify;"></div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" onclick="restaurarVersao()">Restaurar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hover-scale { transition: transform 0.2s; }
+.hover-scale:hover { transform: translateY(-2px); }
+@media print {
+    .btn, .navbar, .breadcrumb, .card-header button, .card-footer, [class*="col-lg-4"] { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
+    .peticao-texto { font-size: 12pt !important; line-height: 1.5 !important; }
+    body { background: white !important; }
+    .container-fluid { padding: 0 !important; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const peticaoId = {{ peticao.id|default(0) }};
+
+// Word count
+document.addEventListener('DOMContentLoaded', function() {
+    const conteudo = document.getElementById('peticaoConteudo');
+    if (conteudo) {
+        const texto = conteudo.textContent || '';
+        const palavras = texto.trim().split(/\s+/).filter(p => p.length > 0).length;
+        document.getElementById('contadorPalavras').textContent = palavras.toLocaleString('pt-BR');
+    }
+});
+
+function exportarPeticao(el, formato) {
+    const btn = el.closest('.dropdown-toggle') || el.closest('.btn') || el;
+    // Redirecionar diretamente para download
+    window.location.href = `/peticoes/${peticaoId}/exportar/${formato}`;
+}
+
+function copiarConteudo() {
+    const texto = document.getElementById('peticaoConteudo').textContent || '';
+    navigator.clipboard.writeText(texto).then(() => {
+        Toast.success('Conteúdo copiado!');
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = texto;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        Toast.success('Conteúdo copiado!');
+    });
+}
+
+function duplicarPeticao() {
+    Toast.info('Funcionalidade em desenvolvimento.');
+}
+
+function excluirPeticao() {
+    if (confirm('Tem certeza? Esta ação não pode ser desfeita.')) {
+        fetch(`/peticoes/${peticaoId}`, { method: 'DELETE' })
+            .then(r => {
+                if (r.ok) {
+                    Toast.success('Petição excluída!');
+                    setTimeout(() => window.location.href = '/peticoes', 1000);
+                } else Toast.error('Erro ao excluir.');
+            })
+            .catch(e => Toast.error('Erro: ' + e.message));
+    }
+}
+
+let versaoAtual = null;
+function verVersao(versaoId) {
+    versaoAtual = versaoId;
+    fetch(`/peticoes/${peticaoId}/versoes/${versaoId}`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('versaoConteudo').textContent = data.conteudo;
+            new bootstrap.Modal(document.getElementById('modalVersao')).show();
+        })
+        .catch(() => Toast.error('Erro ao carregar versão.'));
+}
+
+function restaurarVersao() {
+    if (versaoAtual && confirm('Restaurar esta versão?')) {
+        fetch(`/peticoes/${peticaoId}/versoes/${versaoAtual}/restaurar`, { method: 'POST' })
+            .then(r => {
+                if (r.ok) { Toast.success('Versão restaurada!'); setTimeout(() => location.reload(), 1000); }
+            })
+            .catch(() => Toast.error('Erro ao restaurar.'));
+    }
+}
+</script>
+{% endblock %}

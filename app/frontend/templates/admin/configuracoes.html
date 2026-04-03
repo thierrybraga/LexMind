@@ -1,0 +1,566 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Sticky -->
+    <div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white bg-opacity-75 backdrop-blur py-3 border-bottom z-index-1000" style="top: 0;">
+        <div>
+            <h2 class="mb-1 fw-bold text-gradient"><i class="bi bi-gear me-2"></i>Configurações do Sistema</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin') }}" class="text-decoration-none">Admin</a></li>
+                    <li class="breadcrumb-item active">Configurações</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-danger rounded-pill px-4" onclick="resetConfig()">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>Restaurar
+            </button>
+            <button type="submit" form="configForm" class="btn btn-primary rounded-pill px-4 shadow-sm hover-scale">
+                <i class="bi bi-floppy me-2"></i>Salvar Alterações
+            </button>
+        </div>
+    </div>
+
+    <form id="configForm" method="POST" class="needs-validation" novalidate>
+        <div class="row g-4">
+            <!-- Configurações Gerais -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 100ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-primary-subtle p-2 me-3 text-primary">
+                                <i class="bi bi-sliders fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Configurações Gerais</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Nome do Sistema</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="nome_sistema" value="IA Jurídica">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Email do Administrador</label>
+                            <input type="email" class="form-control form-control-lg bg-light border-0" name="email_admin" value="admin@iajuridica.com.br">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-medium text-muted small text-uppercase">Fuso Horário</label>
+                                <select class="form-select form-select-lg bg-light border-0" name="timezone">
+                                    <option value="America/Sao_Paulo" selected>América/São Paulo (BRT)</option>
+                                    <option value="America/Manaus">América/Manaus (AMT)</option>
+                                    <option value="America/Fortaleza">América/Fortaleza (BRT)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-medium text-muted small text-uppercase">Idioma Padrão</label>
+                                <select class="form-select form-select-lg bg-light border-0" name="idioma">
+                                    <option value="pt-BR" selected>Português (Brasil)</option>
+                                    <option value="en-US">English (US)</option>
+                                    <option value="es">Español</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de IA -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 200ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-info-subtle p-2 me-3 text-info">
+                                <i class="bi bi-cpu fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Configurações de IA</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Modelo LLM</label>
+                            <select class="form-select form-select-lg bg-light border-0" name="modelo_llm">
+                                <option value="llama-3.2-8b" selected>LLaMA 3.2 8B</option>
+                                <option value="llama-3.2-70b">LLaMA 3.2 70B</option>
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="claude-3">Claude 3</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-medium text-muted small text-uppercase d-flex justify-content-between">
+                                <span>Temperatura (Criatividade)</span>
+                                <span class="badge bg-primary rounded-pill" id="temperaturaValue">0.7</span>
+                            </label>
+                            <input type="range" class="form-range" name="temperatura" min="0" max="1" step="0.1" value="0.7" id="temperaturaRange">
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>Preciso (0)</span>
+                                <span>Criativo (1)</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Máximo de Tokens</label>
+                            <input type="number" class="form-control form-control-lg bg-light border-0" name="max_tokens" value="4096" min="256" max="8192">
+                        </div>
+                        <div class="d-flex gap-3">
+                            <div class="form-check form-switch p-3 bg-light rounded-3 w-100 mb-0">
+                                <input class="form-check-input" type="checkbox" name="usar_rag" id="usarRag" checked>
+                                <label class="form-check-label fw-medium" for="usarRag">Usar RAG (Busca Semântica)</label>
+                            </div>
+                            <div class="w-100">
+                                <label class="form-label fw-medium text-muted small text-uppercase mb-1">Top K (RAG)</label>
+                                <input type="number" class="form-control bg-light border-0" name="rag_top_k" value="10" min="1" max="50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Segurança -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 300ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-danger-subtle p-2 me-3 text-danger">
+                                <i class="bi bi-shield-check fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Segurança</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium text-muted small text-uppercase">Tempo de Sessão (min)</label>
+                                <input type="number" class="form-control form-control-lg bg-light border-0" name="sessao_timeout" value="60" min="5" max="1440">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium text-muted small text-uppercase">Tentativas de Login</label>
+                                <input type="number" class="form-control form-control-lg bg-light border-0" name="login_tentativas" value="5" min="3" max="10">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Bloqueio após Falhas (min)</label>
+                            <input type="number" class="form-control form-control-lg bg-light border-0" name="bloqueio_tempo" value="15" min="5" max="60">
+                        </div>
+                        <div class="form-check form-switch p-3 bg-light rounded-3 mb-2">
+                            <input class="form-check-input" type="checkbox" name="2fa_obrigatorio" id="2faObrigatorio">
+                            <label class="form-check-label fw-medium" for="2faObrigatorio">Autenticação de Dois Fatores (2FA) Obrigatória</label>
+                        </div>
+                        <div class="form-check form-switch p-3 bg-light rounded-3 mb-0">
+                            <input class="form-check-input" type="checkbox" name="log_acessos" id="logAcessos" checked>
+                            <label class="form-check-label fw-medium" for="logAcessos">Registrar Todos os Acessos (Audit Log)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Auditoria -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 400ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-warning-subtle p-2 me-3 text-warning">
+                                <i class="bi bi-clock-history fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Auditoria e LGPD</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Retenção de Logs (dias)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-lg bg-light border-0" name="retencao_logs" value="365" min="30" max="3650">
+                                <span class="input-group-text bg-light border-0 text-muted">dias</span>
+                            </div>
+                            <small class="text-muted ms-2"><i class="bi bi-info-circle me-1"></i>Mínimo 30 dias para conformidade LGPD</small>
+                        </div>
+                        <div class="form-check form-switch p-3 bg-light rounded-3 mb-2">
+                            <input class="form-check-input" type="checkbox" name="anonimizar_dados" id="anonimizarDados" checked>
+                            <label class="form-check-label fw-medium" for="anonimizarDados">Anonimizar Dados Sensíveis nos Logs</label>
+                        </div>
+                        <div class="form-check form-switch p-3 bg-light rounded-3 mb-3">
+                            <input class="form-check-input" type="checkbox" name="notificar_incidentes" id="notificarIncidentes" checked>
+                            <label class="form-check-label" for="notificarIncidentes">Notificar Incidentes de Segurança</label>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Email do DPO / Encarregado</label>
+                            <input type="email" class="form-control form-control-lg bg-light border-0" name="email_dpo" placeholder="dpo@empresa.com.br">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Email -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 500ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-success-subtle p-2 me-3 text-success">
+                                <i class="bi bi-envelope fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Email (SMTP)</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Servidor SMTP</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="smtp_host" placeholder="smtp.gmail.com">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-8">
+                                <label class="form-label fw-medium text-muted small text-uppercase">Porta</label>
+                                <input type="number" class="form-control form-control-lg bg-light border-0" name="smtp_port" value="587">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label fw-medium text-muted small text-uppercase">TLS</label>
+                                <select class="form-select form-select-lg bg-light border-0" name="smtp_tls">
+                                    <option value="1" selected>Sim</option>
+                                    <option value="0">Não</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Usuário</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="smtp_user" placeholder="usuario@empresa.com.br">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Senha</label>
+                            <input type="password" class="form-control form-control-lg bg-light border-0" name="smtp_password" placeholder="••••••••">
+                        </div>
+                        <button type="button" class="btn btn-outline-success w-100 rounded-pill" onclick="testEmail()">
+                            <i class="bi bi-send me-2"></i>Testar Envio de Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de API CNJ -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 600ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-secondary-subtle p-2 me-3 text-secondary">
+                                <i class="bi bi-tools fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Integração CNJ</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">URL Base API</label>
+                            <input type="url" class="form-control form-control-lg bg-light border-0" name="cnj_url" value="https://api-publica.datajud.cnj.jus.br">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Chave de API</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control form-control-lg bg-light border-0" name="cnj_api_key" id="cnjApiKey" placeholder="••••••••">
+                                <button class="btn btn-light border-0" type="button" onclick="togglePassword('cnjApiKey', this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium text-muted small text-uppercase">Timeout (seg)</label>
+                                <input type="number" class="form-control form-control-lg bg-light border-0" name="cnj_timeout" value="30" min="5" max="120">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check form-switch p-3 bg-light rounded-3 w-100 mb-0">
+                                    <input class="form-check-input" type="checkbox" name="cnj_cache" id="cnjCache" checked>
+                                    <label class="form-check-label fw-medium" for="cnjCache">Usar Cache</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary w-100 rounded-pill" onclick="testCNJ()">
+                            <i class="bi bi-plug me-2"></i>Testar Conexão
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Upload -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 700ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-primary-subtle p-2 me-3 text-primary">
+                                <i class="bi bi-cloud-upload fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Upload de Arquivos</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Tamanho Máximo (MB)</label>
+                            <input type="number" class="form-control form-control-lg bg-light border-0" name="max_upload_size" value="50" min="1" max="500">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small text-uppercase">Extensões Permitidas</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0" name="extensoes_permitidas" value="pdf,docx,doc,txt,odt,rtf">
+                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Separadas por vírgula</small>
+                        </div>
+                        <div class="form-check form-switch p-3 bg-light rounded-3 mb-2">
+                            <input class="form-check-input" type="checkbox" name="scan_antivirus" id="scanAntivirus" checked>
+                            <label class="form-check-label fw-medium" for="scanAntivirus">Verificar Antivírus ao Upload</label>
+                        </div>
+                        <div class="form-check form-switch p-3 bg-light rounded-3 mb-0">
+                            <input class="form-check-input" type="checkbox" name="indexar_automatico" id="indexarAutomatico" checked>
+                            <label class="form-check-label fw-medium" for="indexarAutomatico">Indexar Automaticamente no RAG</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações do Sistema -->
+            <div class="col-lg-6 fade-in-up" style="animation-delay: 800ms;">
+                <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow transition-all">
+                    <div class="card-header bg-transparent border-0 pt-4 px-4">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 bg-dark-subtle p-2 me-3 text-dark">
+                                <i class="bi bi-info-circle fs-4"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold">Informações do Sistema</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="table-responsive rounded-4 border mb-3">
+                            <table class="table table-hover mb-0">
+                                <tbody class="bg-white">
+                                    <tr>
+                                        <td class="px-3 py-3 fw-medium text-muted">Versão</td>
+                                        <td class="px-3 py-3 text-end fw-bold">{{ version }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-3 fw-medium text-muted">Python</td>
+                                        <td class="px-3 py-3 text-end fw-bold font-monospace">3.11.x</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-3 fw-medium text-muted">FastAPI</td>
+                                        <td class="px-3 py-3 text-end fw-bold font-monospace">0.109.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-3 fw-medium text-muted">Flask</td>
+                                        <td class="px-3 py-3 text-end fw-bold font-monospace">3.0.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-3 fw-medium text-muted">Banco de Dados</td>
+                                        <td class="px-3 py-3 text-end fw-bold">PostgreSQL 15</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-3 fw-medium text-muted">Vector Store</td>
+                                        <td class="px-3 py-3 text-end fw-bold">ChromaDB</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-info rounded-pill" onclick="checkUpdates()">
+                                <i class="bi bi-arrow-repeat me-2"></i>Verificar Atualizações
+                            </button>
+                            <button type="button" class="btn btn-outline-warning rounded-pill" onclick="clearCache()">
+                                <i class="bi bi-brush me-2"></i>Limpar Cache
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão Flutuante Salvar (Mobile) -->
+        <div class="d-lg-none position-fixed bottom-0 start-0 w-100 p-3 bg-white border-top z-index-1000">
+            <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-lg">
+                <i class="bi bi-floppy me-2"></i>Salvar Alterações
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Range slider value display
+document.getElementById('temperaturaRange').addEventListener('input', function() {
+    document.getElementById('temperaturaValue').textContent = this.value;
+});
+
+// Toggle password visibility
+function togglePassword(id, btn) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+        input.type = 'text';
+        if(btn) btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+    } else {
+        input.type = 'password';
+        if(btn) btn.innerHTML = '<i class="bi bi-eye"></i>';
+    }
+}
+
+// Test email
+async function testEmail() {
+    const btn = document.querySelector('button[onclick="testEmail()"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+
+    try {
+        const response = await fetch('/api/config/test-email', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const result = await response.json();
+        
+        if (response.ok) {
+            Toast.success(result.message || 'Email de teste enviado com sucesso!');
+        } else {
+            throw new Error(result.error || 'Erro ao enviar email');
+        }
+    } catch (error) {
+        console.error(error);
+        Toast.error(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Reset configuration
+async function resetConfig() {
+    if (!confirm('Tem certeza que deseja restaurar as configurações padrão? Esta ação não pode ser desfeita.')) return;
+
+    const btn = document.querySelector('button[onclick="resetConfig()"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Restaurando...';
+
+    try {
+        const response = await fetch('/api/config/reset', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const result = await response.json();
+        
+        if (response.ok) {
+            Toast.success(result.message || 'Configurações restauradas com sucesso!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            throw new Error(result.error || 'Erro ao restaurar configurações');
+        }
+    } catch (error) {
+        console.error(error);
+        Toast.error(error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Clear cache
+async function clearCache() {
+    const btn = document.querySelector('button[onclick="clearCache()"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Limpando...';
+
+    try {
+        const response = await fetch('/api/config/clear-cache', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const result = await response.json();
+        
+        if (response.ok) {
+            Toast.success(result.message || 'Cache limpo com sucesso!');
+        } else {
+            throw new Error(result.error || 'Erro ao limpar cache');
+        }
+    } catch (error) {
+        console.error(error);
+        Toast.error(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+
+// Test CNJ connection
+async function testCNJ() {
+    const btn = document.querySelector('button[onclick="testCNJ()"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testando...';
+
+    try {
+        const response = await fetch('/api/config/test-cnj', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const result = await response.json();
+        
+        if (response.ok) {
+            Toast.success(result.message || 'Conexão com CNJ estabelecida!');
+        } else {
+            throw new Error(result.error || 'Erro na conexão com CNJ');
+        }
+    } catch (error) {
+        console.error(error);
+        Toast.error(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Check for updates
+async function checkUpdates() {
+    const btn = document.querySelector('button[onclick="checkUpdates()"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...';
+
+    try {
+        const response = await fetch('/api/config/check-updates', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const result = await response.json();
+        
+        if (response.ok) {
+            Toast.success(result.message || 'Sistema atualizado!');
+        } else {
+            throw new Error(result.error || 'Erro ao verificar atualizações');
+        }
+    } catch (error) {
+        console.error(error);
+        Toast.error(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Form Validation
+(() => {
+  'use strict'
+  const forms = document.querySelectorAll('.needs-validation')
+  Array.from(forms).forEach(form => {
+    form.addEventListener('submit', event => {
+      if (!form.checkValidity()) {
+        event.preventDefault()
+        event.stopPropagation()
+        Toast.error('Por favor, verifique os campos inválidos.');
+      } else {
+          // Em um cenário real, aqui seria o envio do form
+          // event.preventDefault(); // Para demo
+          // Toast.success('Configurações salvas com sucesso!');
+      }
+      form.classList.add('was-validated')
+    }, false)
+  })
+})()
+</script>
+{% endblock %}

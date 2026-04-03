@@ -1,0 +1,783 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if modo == 'editar' else 'Nova' }} Petição{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('peticoes') }}" class="text-decoration-none">Petições</a></li>
+                    <li class="breadcrumb-item active">{{ 'Editar' if modo == 'editar' else 'Nova' }}</li>
+                </ol>
+            </nav>
+            <h2 class="mb-0 fw-bold text-gradient">
+                <i class="bi bi-pencil-square text-primary me-2"></i>
+                {{ 'Editar Petição' if modo == 'editar' else 'Editor de Petição' }}
+            </h2>
+        </div>
+        <div class="btn-group shadow-sm">
+            <button type="button" class="btn btn-light border" onclick="salvarRascunho()">
+                <i class="bi bi-floppy me-2"></i>Salvar Rascunho
+            </button>
+            <button type="button" class="btn btn-primary" onclick="salvarPeticao()">
+                <i class="bi bi-check-lg me-2"></i>Salvar
+            </button>
+        </div>
+    </div>
+
+    <form id="formPeticao" method="POST">
+        <div class="row g-4">
+            <!-- Editor Principal -->
+            <div class="col-lg-8">
+                <!-- Título -->
+                <div class="card border-0 shadow-sm rounded-4 mb-3 fade-in-up" style="animation-delay: 100ms;">
+                    <div class="card-body p-2">
+                        <input type="text"
+                               id="titulo"
+                               name="titulo"
+                               class="form-control form-control-lg border-0 fw-bold fs-4"
+                               placeholder="Título da Petição..."
+                               value="{{ peticao.titulo if peticao else '' }}"
+                               required>
+                    </div>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="card border-0 shadow-sm rounded-4 mb-3 sticky-top fade-in-up" style="top: 1rem; z-index: 100; animation-delay: 200ms;">
+                    <div class="card-body py-2 px-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="btn-toolbar" role="toolbar">
+                                <div class="btn-group me-2 shadow-sm rounded-pill">
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('bold')" title="Negrito"><i class="bi bi-type-bold"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('italic')" title="Itálico"><i class="bi bi-type-italic"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('underline')" title="Sublinhado"><i class="bi bi-type-underline"></i></button>
+                                </div>
+                                <div class="btn-group me-2 shadow-sm rounded-pill">
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('justifyLeft')" title="Alinhar Esquerda"><i class="bi bi-text-left"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('justifyCenter')" title="Centralizar"><i class="bi bi-text-center"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('justifyRight')" title="Alinhar Direita"><i class="bi bi-text-right"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('justifyFull')" title="Justificar"><i class="bi bi-justify"></i></button>
+                                </div>
+                                <div class="btn-group me-2 shadow-sm rounded-pill">
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('insertOrderedList')" title="Lista Numerada"><i class="bi bi-list-ol"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="formatDoc('insertUnorderedList')" title="Lista"><i class="bi bi-list-ul"></i></button>
+                                </div>
+                                <div class="btn-group shadow-sm rounded-pill">
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="inserirCitacao()" title="Citação"><i class="bi bi-quote"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light border-0" onclick="inserirArtigo()" title="Artigo de Lei"><i class="bi bi-paragraph"></i></button>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm" onclick="buscarJurisprudencia()">
+                                    <i class="bi bi-search me-1"></i>Jurisprudência
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success rounded-pill shadow-sm text-white" onclick="sugerirIA()">
+                                    <i class="bi bi-stars me-1"></i>IA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área de Edição -->
+                <div class="card border-0 shadow rounded-4 mb-4 fade-in-up" style="animation-delay: 300ms;">
+                    <div class="card-body p-0">
+                        <div id="editor"
+                             class="editor-area bg-white rounded-top-4"
+                             contenteditable="true"
+                             style="min-height: 800px; padding: 3rem; font-family: 'Times New Roman', serif; font-size: 1.1rem; line-height: 2; text-align: justify; outline: none; color: #2c3e50;">{{ peticao.conteudo|safe if peticao else '' }}</div>
+                        <input type="hidden" id="conteudo" name="conteudo">
+                    </div>
+                    <div class="card-footer bg-light border-top rounded-bottom-4 py-3 px-4 d-flex justify-content-between align-items-center">
+                        <small class="text-muted fw-medium">
+                            <i class="bi bi-fonts me-1"></i><span id="contadorPalavras">0</span> palavras |
+                            <span id="contadorCaracteres">0</span> caracteres
+                        </small>
+                        <small class="text-muted">
+                            Última alteração: <span id="ultimaAlteracao" class="fw-medium">-</span>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Fundamentação -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 400ms;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4" data-bs-toggle="collapse" data-bs-target="#collapseFundamentacao" style="cursor: pointer;">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-hammer me-2"></i>Fundamentação Legal
+                            <i class="bi bi-chevron-down float-end text-muted"></i>
+                        </h6>
+                    </div>
+                    <div class="collapse show" id="collapseFundamentacao">
+                        <div class="card-body px-4 pb-4">
+                            <textarea id="fundamentacao"
+                                      name="fundamentacao"
+                                      class="form-control bg-light border-0"
+                                      rows="5"
+                                      placeholder="Dispositivos legais, artigos e leis aplicáveis...">{{ peticao.fundamentacao if peticao else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Informações -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 150ms;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-gear me-2"></i>Configurações
+                        </h6>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Tipo de Petição *</label>
+                            <select id="tipo" name="tipo" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                {% for tipo in tipos %}
+                                <option value="{{ tipo.valor }}" {% if peticao and peticao.tipo == tipo.valor %}selected{% endif %}>
+                                    {{ tipo.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Área do Direito</label>
+                            <select id="area_direito" name="area_direito" class="form-select">
+                                <option value="">Selecione...</option>
+                                <option value="civil" {% if peticao and peticao.area_direito == 'civil' %}selected{% endif %}>Civil</option>
+                                <option value="trabalhista" {% if peticao and peticao.area_direito == 'trabalhista' %}selected{% endif %}>Trabalhista</option>
+                                <option value="criminal" {% if peticao and peticao.area_direito == 'criminal' %}selected{% endif %}>Criminal</option>
+                                <option value="tributario" {% if peticao and peticao.area_direito == 'tributario' %}selected{% endif %}>Tributário</option>
+                                <option value="previdenciario" {% if peticao and peticao.area_direito == 'previdenciario' %}selected{% endif %}>Previdenciário</option>
+                                <option value="consumidor" {% if peticao and peticao.area_direito == 'consumidor' %}selected{% endif %}>Consumidor</option>
+                                <option value="familia" {% if peticao and peticao.area_direito == 'familia' %}selected{% endif %}>Família</option>
+                                <option value="empresarial" {% if peticao and peticao.area_direito == 'empresarial' %}selected{% endif %}>Empresarial</option>
+                                <option value="administrativo" {% if peticao and peticao.area_direito == 'administrativo' %}selected{% endif %}>Administrativo</option>
+                                <option value="ambiental" {% if peticao and peticao.area_direito == 'ambiental' %}selected{% endif %}>Ambiental</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
+                            <select id="status" name="status" class="form-select">
+                                <option value="rascunho" {% if peticao and peticao.status == 'rascunho' %}selected{% endif %}>Rascunho</option>
+                                <option value="finalizada" {% if peticao and peticao.status == 'finalizada' %}selected{% endif %}>Finalizada</option>
+                                <option value="protocolada" {% if peticao and peticao.status == 'protocolada' %}selected{% endif %}>Protocolada</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Partes -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 250ms;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-people me-2"></i>Partes
+                        </h6>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Autor/Requerente</label>
+                            <input type="text"
+                                   id="autor"
+                                   name="autor"
+                                   class="form-control"
+                                   value="{{ peticao.autor if peticao else '' }}"
+                                   placeholder="Nome completo">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">CPF/CNPJ do Autor</label>
+                            <input type="text"
+                                   id="autor_cpf_cnpj"
+                                   name="autor_cpf_cnpj"
+                                   class="form-control"
+                                   value="{{ peticao.autor_cpf_cnpj if peticao else '' }}"
+                                   data-mask="cpf_cnpj"
+                                   placeholder="000.000.000-00">
+                        </div>
+                        <hr class="my-4 opacity-10">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Réu/Requerido</label>
+                            <input type="text"
+                                   id="reu"
+                                   name="reu"
+                                   class="form-control"
+                                   value="{{ peticao.reu if peticao else '' }}"
+                                   placeholder="Nome completo">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">CPF/CNPJ do Réu</label>
+                            <input type="text"
+                                   id="reu_cpf_cnpj"
+                                   name="reu_cpf_cnpj"
+                                   class="form-control"
+                                   value="{{ peticao.reu_cpf_cnpj if peticao else '' }}"
+                                   data-mask="cpf_cnpj"
+                                   placeholder="000.000.000-00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processo Vinculado -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 350ms;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-link-45deg me-2"></i>Vincular Processo
+                        </h6>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Número do Processo</label>
+                            <div class="input-group">
+                                <input type="text"
+                                       id="processo_numero"
+                                       name="processo_numero"
+                                       class="form-control"
+                                       value="{{ peticao.processo.numero if peticao and peticao.processo else '' }}"
+                                       data-mask="processo"
+                                       placeholder="0000000-00.0000.0.00.0000">
+                                <button type="button" class="btn btn-outline-primary" onclick="buscarProcesso(this)">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="processoInfo" class="mt-3 d-none">
+                            <div class="alert alert-info border-0 shadow-sm mb-0 rounded-3">
+                                <strong id="processoPartes" class="d-block mb-1"></strong>
+                                <small id="processoTribunal" class="text-muted"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jurisprudências -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 450ms;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="bi bi-bar-chart me-2"></i>Jurisprudências
+                        </h6>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" id="countJuris">0</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="listaJurisprudencias" class="list-group list-group-flush rounded-bottom-4" style="max-height: 300px; overflow-y: auto;">
+                            <div class="list-group-item text-center text-muted py-5 border-light">
+                                <i class="bi bi-search mb-3 opacity-50" style="font-size: 2rem;"></i>
+                                <p class="mb-0 small">Use o botão "Jurisprudência" no editor para buscar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Buscar Jurisprudência -->
+<div class="modal fade" id="modalJurisprudencia" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary">Buscar Jurisprudência</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="input-group input-group-lg mb-4 shadow-sm">
+                    <input type="text" id="buscaJuris" class="form-control border-end-0" placeholder="Digite palavras-chave...">
+                    <button class="btn btn-primary px-4" type="button" onclick="executarBuscaJuris()">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                <div id="resultadosJuris" class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center py-5">
+                        <i class="bi bi-search text-muted opacity-25" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3">Digite uma busca para encontrar jurisprudências relevantes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sugestão IA -->
+<div class="modal fade" id="modalIA" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-success">
+                    <i class="bi bi-stars me-2"></i>Assistente IA
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4">
+                    <label class="form-label fw-bold">O que você precisa?</label>
+                    <select id="tipoSugestao" class="form-select form-select-lg mb-3 shadow-sm">
+                        <option value="continuar">Continuar o texto</option>
+                        <option value="melhorar">Melhorar redação</option>
+                        <option value="fundamentar">Sugerir fundamentação</option>
+                        <option value="argumentar">Desenvolver argumentos</option>
+                        <option value="concluir">Sugerir conclusão</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Contexto adicional (opcional)</label>
+                    <textarea id="contextoIA" class="form-control bg-light" rows="3" placeholder="Descreva o contexto ou instruções específicas..."></textarea>
+                </div>
+                <button class="btn btn-success w-100 py-3 rounded-pill shadow-sm fw-bold hover-scale" onclick="gerarSugestaoIA(this)">
+                    <i class="bi bi-stars me-2"></i>Gerar Sugestão
+                </button>
+                <hr class="my-4">
+                <div id="sugestaoResultado" class="d-none fade-in">
+                    <label class="form-label fw-bold text-primary">Sugestão gerada:</label>
+                    <div id="textoSugestao" class="p-4 bg-light-subtle border rounded-3 shadow-sm mb-3" style="white-space: pre-wrap; font-family: 'Times New Roman', serif;"></div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary flex-grow-1" onclick="inserirSugestao()">
+                            <i class="bi bi-plus-lg me-2"></i> Inserir no Editor
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="copiarSugestao()">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.editor-area {
+    outline: none;
+    border: 1px solid #dee2e6;
+    border-radius: 0;
+}
+
+.editor-area:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.editor-area blockquote {
+    border-left: 4px solid #6c757d;
+    padding-left: 15px;
+    margin: 15px 0;
+    font-style: italic;
+    color: #495057;
+}
+
+.editor-area .artigo-lei {
+    background-color: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-family: monospace;
+}
+
+#titulo:focus {
+    box-shadow: none;
+    border-bottom: 2px solid #0d6efd;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variáveis globais
+const peticaoId = {{ peticao.id|default(0) }};
+const editor = document.getElementById('editor');
+let autoSaveTimeout;
+let jurisprudenciasAdicionadas = [];
+let isDirty = false;
+const initialContent = editor.innerHTML;
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    atualizarContadores();
+
+    // Monitorar alterações
+    editor.addEventListener('input', function() {
+        isDirty = true;
+        atualizarContadores();
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(autoSave, 30000); // 30 segundos
+    });
+    
+    // Monitorar alterações nos inputs do formulário
+    document.querySelectorAll('#formPeticao input, #formPeticao select, #formPeticao textarea').forEach(input => {
+        input.addEventListener('change', () => { isDirty = true; });
+    });
+
+    // Salvar conteúdo antes de submit
+    document.getElementById('formPeticao').addEventListener('submit', function() {
+        document.getElementById('conteudo').value = editor.innerHTML;
+    });
+
+    // Atalhos de teclado
+    editor.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key.toLowerCase()) {
+                case 'b':
+                    e.preventDefault();
+                    formatDoc('bold');
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    formatDoc('italic');
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    formatDoc('underline');
+                    break;
+                case 's':
+                    e.preventDefault();
+                    salvarPeticao();
+                    break;
+            }
+        }
+    });
+});
+
+// Formatar documento
+function formatDoc(cmd, value = null) {
+    editor.focus();
+    document.execCommand(cmd, false, value);
+}
+
+// Atualizar contadores
+function atualizarContadores() {
+    const texto = editor.textContent || '';
+    const palavras = texto.trim().split(/\s+/).filter(p => p.length > 0).length;
+    const caracteres = texto.length;
+
+    document.getElementById('contadorPalavras').textContent = palavras.toLocaleString('pt-BR');
+    document.getElementById('contadorCaracteres').textContent = caracteres.toLocaleString('pt-BR');
+    document.getElementById('ultimaAlteracao').textContent = new Date().toLocaleTimeString('pt-BR');
+}
+
+// Inserir citação
+function inserirCitacao() {
+    const selection = window.getSelection();
+    const texto = selection.toString() || 'Texto da citação...';
+
+    document.execCommand('insertHTML', false, `<blockquote>${texto}</blockquote><p></p>`);
+    isDirty = true;
+}
+
+// Inserir artigo de lei
+function inserirArtigo() {
+    const artigo = prompt('Digite o artigo de lei (ex: Art. 5º da CF/88):');
+    if (artigo) {
+        document.execCommand('insertHTML', false, `<div class="artigo-lei">${artigo}</div><p></p>`);
+        isDirty = true;
+    }
+}
+
+// Buscar jurisprudência
+function buscarJurisprudencia() {
+    new bootstrap.Modal(document.getElementById('modalJurisprudencia')).show();
+}
+
+function executarBuscaJuris() {
+    const query = document.getElementById('buscaJuris').value;
+    if (!query) return;
+
+    const container = document.getElementById('resultadosJuris');
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+
+    fetch('/api/pesquisa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query, top_k: 10 })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.resultados && data.resultados.length > 0) {
+            container.innerHTML = data.resultados.map((r, i) => `
+                <div class="card mb-2">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between">
+                            <strong>${r.tribunal} - ${r.numero}</strong>
+                            <span class="badge bg-primary">${(r.similaridade * 100).toFixed(1)}%</span>
+                        </div>
+                        <p class="small text-muted mb-2">${r.ementa.substring(0, 200)}...</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="adicionarJuris(${i})">
+                            <i class="bi bi-plus-lg me-1"></i> Adicionar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            window.resultadosJurisTemp = data.resultados;
+        } else {
+            container.innerHTML = '<p class="text-muted text-center py-4">Nenhum resultado encontrado.</p>';
+        }
+    })
+    .catch(error => {
+        container.innerHTML = '<p class="text-danger text-center py-4">Erro na busca. Tente novamente.</p>';
+    });
+}
+
+function adicionarJuris(index) {
+    const juris = window.resultadosJurisTemp[index];
+    jurisprudenciasAdicionadas.push(juris);
+
+    const lista = document.getElementById('listaJurisprudencias');
+    if (jurisprudenciasAdicionadas.length === 1) {
+        lista.innerHTML = '';
+    }
+
+    lista.innerHTML += `
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong class="small">${juris.tribunal}</strong>
+                    <p class="mb-0 small text-muted">${juris.numero}</p>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="this.closest('.list-group-item').remove(); atualizarCountJuris();">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('countJuris').textContent = jurisprudenciasAdicionadas.length;
+
+    // Inserir citação no editor
+    const citacao = `Conforme jurisprudência do ${juris.tribunal} (${juris.numero}): "${juris.ementa.substring(0, 150)}..."`;
+    editor.focus();
+    document.execCommand('insertHTML', false, `<blockquote>${citacao}</blockquote><p></p>`);
+    isDirty = true;
+
+    bootstrap.Modal.getInstance(document.getElementById('modalJurisprudencia')).hide();
+}
+
+function atualizarCountJuris() {
+    const count = document.querySelectorAll('#listaJurisprudencias .list-group-item').length;
+    document.getElementById('countJuris').textContent = count;
+}
+
+// Sugestão IA
+function sugerirIA() {
+    new bootstrap.Modal(document.getElementById('modalIA')).show();
+}
+
+function gerarSugestaoIA(btnElement) {
+    const tipo = document.getElementById('tipoSugestao').value;
+    const contexto = document.getElementById('contextoIA').value;
+    const conteudoAtual = editor.textContent;
+
+    const btn = btnElement || document.querySelector('button[onclick="gerarSugestaoIA(this)"]');
+    if (!btn) return;
+    
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gerando...';
+
+    fetch('/api/ia/sugerir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            tipo: tipo,
+            contexto: contexto,
+            conteudo_atual: conteudoAtual.substring(conteudoAtual.length - 1000), // Últimos 1000 chars
+            tipo_peticao: document.getElementById('tipo').value,
+            area_direito: document.getElementById('area_direito').value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+
+        if (data.sugestao) {
+            document.getElementById('textoSugestao').textContent = data.sugestao;
+            document.getElementById('sugestaoResultado').classList.remove('d-none');
+            window.sugestaoAtual = data.sugestao;
+        } else {
+            Toast.warning('Não foi possível gerar a sugestão.');
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+        Toast.error('Erro ao gerar sugestão: ' + error.message);
+    });
+}
+
+function inserirSugestao() {
+    if (window.sugestaoAtual) {
+        editor.focus();
+        document.execCommand('insertText', false, '\n\n' + window.sugestaoAtual);
+        isDirty = true;
+        bootstrap.Modal.getInstance(document.getElementById('modalIA')).hide();
+        atualizarContadores();
+    }
+}
+
+function copiarSugestao() {
+    if (window.sugestaoAtual) {
+        navigator.clipboard.writeText(window.sugestaoAtual);
+        Toast.success('Sugestão copiada!');
+    }
+}
+
+// Buscar processo
+function buscarProcesso(btnElement) {
+    const numero = document.getElementById('processo_numero').value;
+    if (!numero) {
+        Toast.warning('Digite o número do processo.');
+        return;
+    }
+
+    // Usar indicador de carregamento
+    const btn = btnElement || document.querySelector('button[onclick="buscarProcesso(this)"]') || document.querySelector('button[onclick="buscarProcesso()"]');
+    if (!btn) return;
+    
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(`/api/processos/buscar?numero=${encodeURIComponent(numero)}`)
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+            
+            if (data.id) {
+                document.getElementById('processoPartes').textContent = `${data.autor} x ${data.reu}`;
+                document.getElementById('processoTribunal').textContent = data.tribunal;
+                document.getElementById('processoInfo').classList.remove('d-none');
+
+                // Preencher partes se estiverem vazias
+                if (!document.getElementById('autor').value) {
+                    document.getElementById('autor').value = data.autor;
+                }
+                if (!document.getElementById('reu').value) {
+                    document.getElementById('reu').value = data.reu;
+                }
+                isDirty = true;
+            } else {
+                document.getElementById('processoInfo').classList.add('d-none');
+                Toast.warning('Processo não encontrado.');
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+            Toast.error('Erro ao buscar processo.');
+        });
+}
+
+// Salvar
+function salvarPeticao() {
+    document.getElementById('conteudo').value = editor.innerHTML;
+
+    const formData = new FormData(document.getElementById('formPeticao'));
+
+    // Validações
+    if (!formData.get('titulo')) {
+        Toast.warning('Digite o título da petição.');
+        return;
+    }
+    if (!formData.get('tipo')) {
+        Toast.warning('Selecione o tipo de petição.');
+        return;
+    }
+
+    // Feedback visual
+    const saveBtn = document.querySelector('button[onclick="salvarPeticao()"]');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    const url = peticaoId ? `/peticoes/${peticaoId}/editar` : '/peticoes/nova';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(async response => {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Erro ao salvar petição');
+        }
+
+        if (data.redirect_url) {
+             isDirty = false;
+             window.location.href = data.redirect_url;
+        } else if (data.success) {
+             isDirty = false;
+             Toast.success(data.message || 'Petição salva com sucesso!');
+             if (!peticaoId && data.id) {
+                 // Se era nova e salvou, redirecionar para edição
+                 setTimeout(() => window.location.href = `/peticoes/${data.id}/editar`, 1000);
+             }
+        }
+    })
+    .catch(error => {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+        Toast.error(error.message);
+    });
+}
+
+function salvarRascunho() {
+    document.getElementById('status').value = 'rascunho';
+    salvarPeticao();
+}
+
+function autoSave() {
+    if (peticaoId && isDirty) {
+        document.getElementById('conteudo').value = editor.innerHTML;
+
+        const formData = new FormData(document.getElementById('formPeticao'));
+
+        fetch(`/peticoes/${peticaoId}/autosave`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Auto-save realizado');
+                const time = new Date().toLocaleTimeString('pt-BR');
+                document.getElementById('ultimaAlteracao').textContent = time;
+                
+                // Visual feedback
+                const footerSmall = document.getElementById('ultimaAlteracao').closest('small');
+                const originalHtml = footerSmall.innerHTML;
+                footerSmall.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>Salvo às <span class="fw-medium">${time}</span>`;
+                
+                setTimeout(() => {
+                    // Restore original structure but with new time
+                    footerSmall.innerHTML = `Última alteração: <span id="ultimaAlteracao" class="fw-medium">${time}</span>`;
+                }, 3000);
+                
+                // Não resetamos isDirty no auto-save para garantir que o usuário salve explicitamente se quiser sair
+            }
+        })
+        .catch(error => {
+            console.error('Erro no auto-save:', error);
+        });
+    }
+}
+
+// Alertar ao sair sem salvar
+window.addEventListener('beforeunload', function(e) {
+    if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+</script>
+{% endblock %}

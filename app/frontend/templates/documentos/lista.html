@@ -1,0 +1,860 @@
+{% extends "base.html" %}
+
+{% block title %}Documentos - IA Jurídica{% endblock %}
+
+{% block content %}
+<!-- Sticky Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white bg-opacity-75 backdrop-blur py-3 border-bottom z-index-1000" style="top: 0;">
+    <div>
+        <h2 class="mb-1 fw-bold text-gradient"><i class="bi bi-folder2-open me-2"></i>Documentos</h2>
+        <p class="text-muted mb-0">Gerenciamento de documentos e arquivos</p>
+    </div>
+    <div>
+        <button class="btn btn-primary rounded-pill px-4 shadow-sm hover-scale" onclick="showUploadModal()">
+            <i class="bi bi-cloud-upload me-2"></i>Upload
+        </button>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="row g-4 mb-4 fade-in-up">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-4 border-primary">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.75rem;">Total</small>
+                        <h3 class="mb-0 fw-bold text-primary" id="totalDocumentos">0</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary">
+                        <i class="bi bi-file-earmark fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-4 border-danger">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.75rem;">PDFs</small>
+                        <h3 class="mb-0 fw-bold text-danger" id="totalPDF">0</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded-circle text-danger">
+                        <i class="bi bi-file-earmark-pdf fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-4 border-info">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.75rem;">Word</small>
+                        <h3 class="mb-0 fw-bold text-info" id="totalDOCX">0</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded-circle text-info">
+                        <i class="bi bi-file-earmark-word fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-4 border-secondary">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.75rem;">Espaço Usado</small>
+                        <h3 class="mb-0 fw-bold text-secondary" id="espacoUsado">0 MB</h3>
+                    </div>
+                    <div class="bg-secondary bg-opacity-10 p-3 rounded-circle text-secondary">
+                        <i class="bi bi-database fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros e Busca -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up delay-100">
+    <div class="card-body">
+        <form id="buscaForm" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-uppercase text-muted">Buscar</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control bg-light border-0" id="termoBusca" placeholder="Nome do arquivo ou conteúdo...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-uppercase text-muted">Tipo</label>
+                <select class="form-select bg-light border-0" id="filtroTipo">
+                    <option value="">Todos</option>
+                    <option value="pdf">PDF</option>
+                    <option value="docx">DOCX</option>
+                    <option value="doc">DOC</option>
+                    <option value="txt">TXT</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-uppercase text-muted">Categoria</label>
+                <select class="form-select bg-light border-0" id="filtroCategoria">
+                    <option value="">Todas</option>
+                    <option value="peticao">Petições</option>
+                    <option value="procuracao">Procurações</option>
+                    <option value="contrato">Contratos</option>
+                    <option value="decisao">Decisões</option>
+                    <option value="documento">Documentos</option>
+                    <option value="outro">Outros</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-uppercase text-muted">Processo</label>
+                <select class="form-select bg-light border-0" id="filtroProcesso">
+                    <option value="">Todos</option>
+                    <!-- Populado via JS -->
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm hover-scale">
+                    <i class="bi bi-funnel me-2"></i>Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Visualização: Grid ou Lista -->
+<div class="d-flex justify-content-between align-items-center mb-3 fade-in-up delay-200">
+    <div class="btn-group shadow-sm rounded-pill overflow-hidden" role="group">
+        <input type="radio" class="btn-check" name="viewMode" id="viewGrid" checked autocomplete="off">
+        <label class="btn btn-outline-primary border-0 px-3" for="viewGrid">
+            <i class="bi bi-grid-3x3-gap"></i>
+        </label>
+        <input type="radio" class="btn-check" name="viewMode" id="viewList" autocomplete="off">
+        <label class="btn btn-outline-primary border-0 px-3" for="viewList">
+            <i class="bi bi-list-ul"></i>
+        </label>
+    </div>
+    <div>
+        <select class="form-select form-select-sm bg-light border-0 rounded-pill px-3" id="ordenacao" style="width: auto;">
+            <option value="data_desc">Mais recentes</option>
+            <option value="data_asc">Mais antigos</option>
+            <option value="nome_asc">Nome (A-Z)</option>
+            <option value="nome_desc">Nome (Z-A)</option>
+            <option value="tamanho_desc">Maior tamanho</option>
+        </select>
+    </div>
+</div>
+
+<!-- Grid de Documentos -->
+<div id="documentosGrid" class="documents-grid fade-in-up delay-300">
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Documentos (oculta por padrão) -->
+<div id="documentosList" class="card border-0 shadow-sm rounded-4 fade-in-up delay-300" style="display: none;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th width="40" class="ps-4"><input class="form-check-input" type="checkbox" id="selectAll"></th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Nome</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Categoria</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Processo</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Tamanho</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0">Data Upload</th>
+                        <th class="text-uppercase text-muted small fw-bold border-0 text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="documentosTableBody" class="border-top-0">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginação -->
+<nav class="mt-4 fade-in-up delay-400" aria-label="Paginação">
+    <ul class="pagination pagination-sm justify-content-center" id="paginacao">
+    </ul>
+</nav>
+
+<!-- Ações em lote -->
+<div class="fixed-bottom p-4 mb-3" id="acoesLote" style="display: none; z-index: 1050;">
+    <div class="container">
+        <div class="card border-0 shadow-lg rounded-pill bg-dark text-white mx-auto" style="max-width: 600px;">
+            <div class="card-body d-flex justify-content-between align-items-center py-2 px-4">
+                <span class="fw-bold"><span id="qtdSelecionados" class="badge bg-primary rounded-pill me-2">0</span> documentos selecionados</span>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="downloadSelecionados()">
+                        <i class="bi bi-download me-1"></i> Download
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="excluirSelecionados()">
+                        <i class="bi bi-trash me-1"></i> Excluir
+                    </button>
+                    <button class="btn btn-sm btn-secondary rounded-circle" onclick="cancelarSelecao()" title="Cancelar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-cloud-upload me-2"></i>Upload de Documentos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 pb-4">
+                <form id="uploadForm">
+                    <div class="mb-4">
+                        <div class="upload-area bg-light rounded-4 border-2 border-dashed p-5 text-center transition-all" id="dropZone">
+                            <i class="bi bi-cloud-upload text-primary mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="fw-bold mb-2">Arraste arquivos aqui</h5>
+                            <p class="text-muted small mb-4">ou clique para selecionar do seu computador</p>
+                            <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.txt" hidden>
+                            <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm hover-scale" onclick="document.getElementById('fileInput').click()">
+                                Selecionar Arquivos
+                            </button>
+                            <p class="text-muted small mt-3 mb-0">PDF, DOC, DOCX, TXT (máx. 10MB)</p>
+                        </div>
+                    </div>
+
+                    <div id="fileList" class="mb-4" style="display: none;">
+                        <h6 class="fw-bold text-muted small text-uppercase mb-3">Arquivos selecionados</h6>
+                        <div id="selectedFiles" class="d-flex flex-column gap-2"></div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Categoria <span class="text-danger">*</span></label>
+                            <select class="form-select bg-light border-0" id="categoriaUpload" required>
+                                <option value="">Selecione...</option>
+                                <option value="peticao">Petição</option>
+                                <option value="procuracao">Procuração</option>
+                                <option value="contrato">Contrato</option>
+                                <option value="decisao">Decisão/Sentença</option>
+                                <option value="documento">Documento Comprobatório</option>
+                                <option value="outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Vincular ao Processo</label>
+                            <select class="form-select bg-light border-0" id="processoUpload">
+                                <option value="">Nenhum (documento avulso)</option>
+                                <!-- Populado via JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Descrição</label>
+                        <textarea class="form-control bg-light border-0" id="descricaoUpload" rows="2" placeholder="Descrição opcional do(s) documento(s)"></textarea>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="indexarRAG" checked>
+                        <label class="form-check-label" for="indexarRAG">
+                            <i class="bi bi-stars text-warning me-1"></i> Indexar para pesquisa com IA (RAG)
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="enviarUpload()" id="btnEnviar" disabled>
+                    <i class="bi bi-upload me-2"></i>Enviar Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Visualizar -->
+<div class="modal fade" id="visualizarModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary" id="visualizarTitulo">Documento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="visualizarContent" style="height: 75vh; background: #f8f9fa;">
+                <!-- Conteúdo do documento -->
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="downloadDocumento()">
+                    <i class="bi bi-download me-2"></i>Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+.document-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+.document-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,0.175) !important;
+    border-color: transparent;
+}
+.document-card.selected {
+    border: 2px solid var(--bs-primary);
+    background: #f0f7ff;
+}
+.document-card .icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    transition: transform 0.3s;
+}
+.document-card:hover .icon {
+    transform: scale(1.1);
+}
+.document-card .icon.pdf { color: #dc3545; }
+.document-card .icon.docx { color: #0d6efd; }
+.document-card .icon.doc { color: #0d6efd; }
+.document-card .icon.txt { color: #6c757d; }
+.document-card .nome {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.5rem;
+    color: var(--bs-body-color);
+}
+.document-card .info {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+.document-card .checkbox {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    transform: scale(1.2);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.document-card:hover .checkbox,
+.document-card.selected .checkbox {
+    opacity: 1;
+}
+.document-card .actions {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    opacity: 0;
+    transition: all 0.2s;
+    transform: translateY(-10px);
+}
+.document-card:hover .actions {
+    opacity: 1;
+    transform: translateY(0);
+}
+.upload-area {
+    cursor: pointer;
+}
+.upload-area:hover, .upload-area.dragover {
+    border-color: var(--bs-primary) !important;
+    background: #f8f9fa;
+    transform: scale(1.01);
+}
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+}
+.file-item:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.05);
+}
+.file-item .file-icon {
+    font-size: 1.5rem;
+    margin-right: 1rem;
+}
+.file-item .file-info {
+    flex: 1;
+}
+.file-item .file-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.file-item .file-size {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let documentosData = {{ documentos | tojson | safe }} || [];
+let arquivosSelecionados = [];
+let documentosSelecionados = new Set();
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderizarDocumentos();
+    atualizarEstatisticas();
+    setupDropZone();
+
+    // Toggle visualização
+    document.getElementById('viewGrid').addEventListener('change', () => toggleView('grid'));
+    document.getElementById('viewList').addEventListener('change', () => toggleView('list'));
+
+    // Busca
+    document.getElementById('buscaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        carregarDocumentos();
+    });
+
+    // Ordenação
+    document.getElementById('ordenacao').addEventListener('change', carregarDocumentos);
+
+    // Filtros change
+    document.getElementById('filtroTipo').addEventListener('change', carregarDocumentos);
+    document.getElementById('filtroCategoria').addEventListener('change', carregarDocumentos);
+    document.getElementById('filtroProcesso').addEventListener('change', carregarDocumentos);
+
+    // Select all
+    document.getElementById('selectAll').addEventListener('change', function() {
+        if (this.checked) {
+            documentosData.forEach(d => documentosSelecionados.add(d.id));
+        } else {
+            documentosSelecionados.clear();
+        }
+        renderizarDocumentos(); // Re-render to update checkboxes
+        atualizarAcoesLote();
+    });
+});
+
+function setupDropZone() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'));
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'));
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        const files = e.dataTransfer.files;
+        handleFiles(files);
+    });
+
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+}
+
+function handleFiles(files) {
+    arquivosSelecionados = Array.from(files);
+    renderizarArquivosSelecionados();
+    document.getElementById('btnEnviar').disabled = arquivosSelecionados.length === 0;
+}
+
+function renderizarArquivosSelecionados() {
+    const container = document.getElementById('selectedFiles');
+    const fileList = document.getElementById('fileList');
+
+    if (arquivosSelecionados.length === 0) {
+        fileList.style.display = 'none';
+        return;
+    }
+
+    fileList.style.display = 'block';
+    container.innerHTML = arquivosSelecionados.map((file, index) => `
+        <div class="file-item">
+            <i class="bi bi-file-earmark file-icon ${getFileIconClass(file.name)} text-primary"></i>
+            <div class="file-info">
+                <div class="file-name text-dark">${file.name}</div>
+                <div class="file-size">${formatarTamanho(file.size)}</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-circle" onclick="removerArquivo(${index})">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function removerArquivo(index) {
+    arquivosSelecionados.splice(index, 1);
+    renderizarArquivosSelecionados();
+    document.getElementById('btnEnviar').disabled = arquivosSelecionados.length === 0;
+}
+
+function getFileIconClass(nome) {
+    const ext = nome.split('.').pop().toLowerCase();
+    const icons = { 'pdf': 'bi-file-earmark-pdf', 'docx': 'bi-file-earmark-word', 'doc': 'bi-file-earmark-word', 'txt': 'bi-file-text' };
+    return icons[ext] || 'bi-file-earmark';
+}
+
+async function carregarDocumentos() {
+    const termo = document.getElementById('termoBusca').value;
+    const tipo = document.getElementById('filtroTipo').value;
+    const categoria = document.getElementById('filtroCategoria').value;
+    const processo = document.getElementById('filtroProcesso').value;
+    const ordenacao = document.getElementById('ordenacao').value;
+
+    const params = new URLSearchParams();
+    if (termo) params.append('q', termo);
+    if (tipo) params.append('tipo', tipo);
+    if (categoria) params.append('categoria', categoria);
+    if (processo) params.append('processo_id', processo);
+    if (ordenacao) params.append('ordem', ordenacao);
+
+    // Show loading
+    const grid = document.getElementById('documentosGrid');
+    const listBody = document.getElementById('documentosTableBody');
+    
+    // Simplificado loading state (pode ser melhorado)
+    if(document.getElementById('viewGrid').checked) {
+        grid.innerHTML = `
+            <div class="text-center py-5" style="grid-column: 1/-1;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+            </div>`;
+    } else {
+        listBody.innerHTML = `
+            <tr><td colspan="7" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div>
+            </td></tr>`;
+    }
+
+    try {
+        const response = await fetch(`{{ url_for('documentos') }}?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) throw new Error('Erro ao carregar documentos');
+
+        const data = await response.json();
+        documentosData = data.documentos || [];
+
+        renderizarDocumentos();
+        atualizarEstatisticas();
+
+    } catch (error) {
+        console.error('Erro:', error);
+        if (typeof Toast !== 'undefined') Toast.error('Erro ao carregar documentos');
+        
+        // Restore empty state on error
+        documentosData = [];
+        renderizarDocumentos();
+    }
+}
+
+function renderizarDocumentos() {
+    const viewMode = document.getElementById('viewGrid').checked ? 'grid' : 'list';
+
+    if (viewMode === 'grid') {
+        renderizarGrid();
+    } else {
+        renderizarLista();
+    }
+}
+
+function renderizarGrid() {
+    const grid = document.getElementById('documentosGrid');
+    document.getElementById('documentosGrid').style.display = 'grid';
+    document.getElementById('documentosList').style.display = 'none';
+
+    if (documentosData.length === 0) {
+        grid.innerHTML = `
+            <div class="text-center py-5" style="grid-column: 1/-1;">
+                <i class="bi bi-folder2-open text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                <p class="text-muted mt-3">Nenhum documento encontrado</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = documentosData.map(doc => `
+        <div class="document-card ${documentosSelecionados.has(doc.id) ? 'selected' : ''}"
+             onclick="toggleSelecao(${doc.id})" ondblclick="visualizarDocumento(${doc.id})">
+            <input type="checkbox" class="form-check-input checkbox" ${documentosSelecionados.has(doc.id) ? 'checked' : ''}>
+            <div class="actions">
+                <div class="btn-group shadow-sm rounded-pill overflow-hidden bg-white">
+                    <button class="btn btn-sm btn-white text-primary border-end" onclick="event.stopPropagation(); visualizarDocumento(${doc.id})" title="Visualizar">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-white text-success" onclick="event.stopPropagation(); downloadDocumento(${doc.id})" title="Download">
+                        <i class="bi bi-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="icon ${doc.tipo}">
+                <i class="bi ${getFileIconClass(doc.nome)}"></i>
+            </div>
+            <div class="nome text-dark" title="${doc.nome}">${doc.nome}</div>
+            <div class="info">
+                <span class="badge bg-light text-dark border mb-2">${doc.categoria}</span>
+                <div class="small">${formatarTamanho(doc.tamanho)} • ${formatarData(doc.dataUpload)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderizarLista() {
+    const tbody = document.getElementById('documentosTableBody');
+    document.getElementById('documentosGrid').style.display = 'none';
+    document.getElementById('documentosList').style.display = 'block';
+
+    if (documentosData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <i class="bi bi-folder2-open text-muted mb-3" style="font-size: 2rem; opacity: 0.5;"></i>
+                    <p class="text-muted mb-0">Nenhum documento encontrado</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = documentosData.map(doc => `
+        <tr class="${documentosSelecionados.has(doc.id) ? 'table-active' : ''}" onclick="toggleSelecao(${doc.id})">
+            <td class="ps-4"><input type="checkbox" class="form-check-input" ${documentosSelecionados.has(doc.id) ? 'checked' : ''}></td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <i class="bi ${getFileIconClass(doc.nome)} text-primary me-2 fs-5"></i>
+                    <span class="fw-semibold text-dark">${doc.nome}</span>
+                </div>
+            </td>
+            <td><span class="badge bg-light text-dark border rounded-pill px-3">${doc.categoria}</span></td>
+            <td><span class="small text-muted font-monospace">${doc.processo || '-'}</span></td>
+            <td class="small text-muted">${formatarTamanho(doc.tamanho)}</td>
+            <td class="small text-muted">${formatarData(doc.dataUpload)}</td>
+            <td class="text-end pe-4">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary rounded-start-pill" onclick="event.stopPropagation(); visualizarDocumento(${doc.id})" title="Visualizar">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success rounded-end-pill" onclick="event.stopPropagation(); downloadDocumento(${doc.id})" title="Download">
+                        <i class="bi bi-download"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function toggleSelecao(id) {
+    if (documentosSelecionados.has(id)) {
+        documentosSelecionados.delete(id);
+    } else {
+        documentosSelecionados.add(id);
+    }
+    renderizarDocumentos();
+    atualizarAcoesLote();
+}
+
+function atualizarAcoesLote() {
+    const div = document.getElementById('acoesLote');
+    const qtd = document.getElementById('qtdSelecionados');
+    
+    if (documentosSelecionados.size > 0) {
+        div.style.display = 'block';
+        qtd.textContent = documentosSelecionados.size;
+    } else {
+        div.style.display = 'none';
+    }
+}
+
+function cancelarSelecao() {
+    documentosSelecionados.clear();
+    renderizarDocumentos();
+    atualizarAcoesLote();
+    document.getElementById('selectAll').checked = false;
+}
+
+function showUploadModal() {
+    const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+    modal.show();
+}
+
+function visualizarDocumento(id) {
+    const doc = documentosData.find(d => d.id === id);
+    if (!doc) return;
+
+    document.getElementById('visualizarTitulo').textContent = doc.nome;
+    // Mock de conteúdo
+    document.getElementById('visualizarContent').innerHTML = `
+        <div class="d-flex align-items-center justify-content-center h-100 flex-column">
+            <i class="bi ${getFileIconClass(doc.nome)} text-muted mb-3" style="font-size: 5rem;"></i>
+            <h5 class="text-muted">Visualização não disponível no modo de demonstração</h5>
+            <p class="small text-muted">Arquivo: ${doc.nome}</p>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('visualizarModal')).show();
+}
+
+function downloadDocumento(id) {
+    if (typeof Toast !== 'undefined') Toast.success('Download iniciado');
+}
+
+function downloadSelecionados() {
+    if (typeof Toast !== 'undefined') Toast.success(`Iniciando download de ${documentosSelecionados.size} arquivos`);
+    cancelarSelecao();
+}
+
+function excluirSelecionados() {
+    if (confirm(`Tem certeza que deseja excluir ${documentosSelecionados.size} documentos?`)) {
+        if (typeof Toast !== 'undefined') Toast.success('Documentos excluídos com sucesso');
+        cancelarSelecao();
+        // Em produção, recarregar dados
+    }
+}
+
+async function enviarUpload() {
+    const btn = document.getElementById('btnEnviar');
+    const originalText = btn.innerHTML;
+    const categoria = document.getElementById('categoriaUpload').value;
+    const processoId = document.getElementById('processoUpload').value;
+    const descricao = document.getElementById('descricaoUpload').value;
+    const indexar = document.getElementById('indexarRAG').checked;
+
+    if (!categoria) {
+        if (typeof Toast !== 'undefined') Toast.warning('Selecione uma categoria.');
+        return;
+    }
+
+    if (arquivosSelecionados.length === 0) return;
+
+    // Loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+
+    let sucessos = 0;
+    let erros = 0;
+
+    // Upload sequencial para simplificar (pode ser paralelo com Promise.all)
+    for (const file of arquivosSelecionados) {
+        const formData = new FormData();
+        formData.append('arquivo', file);
+        formData.append('categoria', categoria); // Backend precisa aceitar este campo ou usar 'nome' prefixado
+        if (processoId) formData.append('processo_id', processoId);
+        formData.append('descricao', descricao);
+        // formData.append('indexar', indexar); // Se backend suportar
+
+        try {
+            const response = await fetch('{{ url_for("documento_upload") }}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) throw new Error(result.error || 'Erro no upload');
+            sucessos++;
+
+        } catch (error) {
+            console.error(`Erro ao enviar ${file.name}:`, error);
+            erros++;
+        }
+    }
+
+    // Restaurar botão
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+
+    // Feedback
+    if (sucessos > 0) {
+        if (typeof Toast !== 'undefined') Toast.success(`${sucessos} arquivo(s) enviado(s) com sucesso!`);
+        if (erros > 0) Toast.warning(`${erros} falha(s) no envio.`);
+        
+        bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+        document.getElementById('uploadForm').reset();
+        document.getElementById('fileList').style.display = 'none';
+        arquivosSelecionados = [];
+        
+        // Recarregar lista
+        carregarDocumentos();
+    } else {
+        if (typeof Toast !== 'undefined') Toast.error('Falha ao enviar arquivos. Tente novamente.');
+    }
+}
+
+function formatarTamanho(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function formatarData(dataISO) {
+    return new Date(dataISO).toLocaleDateString('pt-BR');
+}
+
+function atualizarEstatisticas() {
+    document.getElementById('totalDocumentos').textContent = documentosData.length;
+    document.getElementById('totalPDF').textContent = documentosData.filter(d => d.tipo === 'pdf').length;
+    document.getElementById('totalDOCX').textContent = documentosData.filter(d => d.tipo === 'docx' || d.tipo === 'doc').length;
+    
+    const totalBytes = documentosData.reduce((acc, curr) => acc + curr.tamanho, 0);
+    document.getElementById('espacoUsado').textContent = formatarTamanho(totalBytes);
+}
+
+function toggleView(mode) {
+    document.getElementById('viewGrid').checked = mode === 'grid';
+    document.getElementById('viewList').checked = mode === 'list';
+    renderizarDocumentos();
+}
+</script>
+{% endblock %}

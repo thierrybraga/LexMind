@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Resultado IA - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Cabeçalho -->
+            <div class="d-flex align-items-center mb-4 fade-in">
+                <a href="{{ url_for('pesquisa') }}" class="btn btn-outline-secondary me-3 rounded-pill hover-scale shadow-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+                <div>
+                    <h1 class="h3 mb-1 fw-bold text-primary-900">Análise Jurídica IA</h1>
+                    <p class="text-muted mb-0 small">Resultado do processamento da sua consulta</p>
+                </div>
+            </div>
+
+            <!-- Pergunta -->
+            <div class="card mb-4 border-0 shadow-sm bg-light rounded-4 fade-in delay-100">
+                <div class="card-body p-4">
+                    <h6 class="card-subtitle text-uppercase text-muted fw-bold mb-3 small">
+                        <i class="bi bi-question-circle-fill me-2 text-primary"></i>Sua Pergunta
+                    </h6>
+                    <p class="card-text fs-5 fw-medium text-dark">{{ pergunta }}</p>
+                </div>
+            </div>
+
+            <!-- Resposta -->
+            <div class="card border-0 shadow-lg rounded-4 mb-4 fade-in delay-200">
+                <div class="card-header bg-white py-3 border-0 rounded-top-4 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-robot me-2"></i>Resposta da IA
+                    </h5>
+                    <span class="badge bg-{{ 'success' if resultado.confidence > 0.7 else 'warning' }} rounded-pill px-3 py-2 shadow-sm">
+                        <i class="bi bi-activity me-1"></i>
+                        Confiança: {{ (resultado.confidence * 100)|round|int }}%
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="markdown-content">
+                        {{ resultado.content | replace('\n', '<br>') | safe }}
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex align-items-center text-muted small">
+                            <span class="me-3"><i class="bi bi-cpu me-1"></i> Modelo: <strong>{{ resultado.model }}</strong></span>
+                            <span><i class="bi bi-fonts me-1"></i> Tokens: <strong>{{ resultado.tokens_used }}</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fontes -->
+            {% if resultado.sources_used %}
+            <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in delay-300">
+                <div class="card-header bg-white py-3 border-bottom-0 rounded-top-4">
+                    <h5 class="mb-0 fw-bold text-secondary">
+                        <i class="bi bi-journal-bookmark-fill me-2"></i>Fontes Utilizadas
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush rounded-bottom-4">
+                    {% for fonte in resultado.sources_used %}
+                    <div class="list-group-item px-4 py-3 border-light">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-file-text-fill me-3 text-muted mt-1"></i>
+                            <div>
+                                <h6 class="mb-1 fw-semibold text-dark">{{ fonte }}</h6>
+                                <small class="text-muted">Documento referenciado na análise</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Disclaimer -->
+            <div class="alert alert-warning border-0 shadow-sm rounded-4 mt-4 d-flex align-items-center fade-in delay-300" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-4 flex-shrink-0 me-3 text-warning-emphasis"></i>
+                <div>
+                    <strong class="d-block mb-1 text-warning-emphasis">Aviso Legal</strong>
+                    <span class="small text-muted">Esta resposta foi gerada por inteligência artificial e pode conter imprecisões. Sempre verifique as informações em fontes oficiais. Não substitui a consultoria de um advogado.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

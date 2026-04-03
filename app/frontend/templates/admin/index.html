@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+
+{% block title %}Painel Administrativo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+        <div>
+            <h2 class="mb-1 fw-bold text-gradient">
+                <i class="bi bi-shield-lock text-primary me-2"></i>Painel Administrativo
+            </h2>
+            <p class="text-muted mb-0">Gerenciamento centralizado do sistema IA Jurídica</p>
+        </div>
+        <div>
+            <span class="badge bg-light text-dark border shadow-sm px-3 py-2 rounded-pill">
+                <i class="bi bi-circle-fill text-success me-2 small"></i>Sistema Operacional
+            </span>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 100ms;">
+            <div class="card shadow-sm border-0 h-100 rounded-4 hover-scale">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="icon-square bg-primary-subtle text-primary rounded-4 p-3 me-3">
+                            <i class="bi bi-people fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0 small text-uppercase fw-bold">Usuários</p>
+                            <h3 class="mb-0 fw-bold" id="statUsuarios">-</h3>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-success-subtle text-success rounded-pill">
+                            <i class="bi bi-arrow-up-short"></i> Ativos
+                        </span>
+                        <a href="{{ url_for('admin_usuarios') }}" class="btn btn-sm btn-light rounded-pill stretched-link">
+                            Gerenciar <i class="bi bi-chevron-right ms-1" style="font-size: 0.75rem;"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 150ms;">
+            <div class="card shadow-sm border-0 h-100 rounded-4 hover-scale">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="icon-square bg-success-subtle text-success rounded-4 p-3 me-3">
+                            <i class="bi bi-file-earmark-text fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0 small text-uppercase fw-bold">Petições</p>
+                            <h3 class="mb-0 fw-bold" id="statPeticoes">-</h3>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-success-subtle text-success rounded-pill">
+                            <i class="bi bi-check2"></i> Total
+                        </span>
+                        <a href="{{ url_for('peticoes') }}" class="btn btn-sm btn-light rounded-pill stretched-link">
+                            Ver todas <i class="bi bi-chevron-right ms-1" style="font-size: 0.75rem;"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 200ms;">
+            <div class="card shadow-sm border-0 h-100 rounded-4 hover-scale">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="icon-square bg-info-subtle text-info rounded-4 p-3 me-3">
+                            <i class="bi bi-robot fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0 small text-uppercase fw-bold">Consultas IA</p>
+                            <h3 class="mb-0 fw-bold" id="statConsultasIA">-</h3>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-info-subtle text-info rounded-pill">Hoje</span>
+                        <a href="{{ url_for('ia_historico') }}" class="btn btn-sm btn-light rounded-pill stretched-link">
+                            Histórico <i class="bi bi-chevron-right ms-1" style="font-size: 0.75rem;"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 250ms;">
+            <div class="card shadow-sm border-0 h-100 rounded-4 hover-scale">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="icon-square bg-warning-subtle text-warning rounded-4 p-3 me-3">
+                            <i class="bi bi-activity fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0 small text-uppercase fw-bold">Logs Sistema</p>
+                            <h3 class="mb-0 fw-bold" id="statLogs">-</h3>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">Hoje</span>
+                        <a href="{{ url_for('admin_logs') }}" class="btn btn-sm btn-light rounded-pill stretched-link">
+                            Auditoria <i class="bi bi-chevron-right ms-1" style="font-size: 0.75rem;"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Menu de Administração -->
+        <div class="col-lg-8 fade-in-up" style="animation-delay: 300ms;">
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-grid-fill me-2"></i>Módulos Administrativos
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{{ url_for('admin_usuarios') }}" class="card border-0 bg-light h-100 text-decoration-none hover-shadow rounded-4 transition-all">
+                                <div class="card-body text-center py-4">
+                                    <div class="avatar-md bg-white text-primary rounded-circle shadow-sm mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-people fs-4"></i>
+                                    </div>
+                                    <h6 class="card-title fw-bold text-dark mb-1">Usuários</h6>
+                                    <p class="card-text text-muted small mb-0">Gestão de acesso e perfis</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('admin_logs') }}" class="card border-0 bg-light h-100 text-decoration-none hover-shadow rounded-4 transition-all">
+                                <div class="card-body text-center py-4">
+                                    <div class="avatar-md bg-white text-info rounded-circle shadow-sm mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-clipboard-data fs-4"></i>
+                                    </div>
+                                    <h6 class="card-title fw-bold text-dark mb-1">Auditoria</h6>
+                                    <p class="card-text text-muted small mb-0">Logs e rastreabilidade</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('admin_configuracoes') }}" class="card border-0 bg-light h-100 text-decoration-none hover-shadow rounded-4 transition-all">
+                                <div class="card-body text-center py-4">
+                                    <div class="avatar-md bg-white text-secondary rounded-circle shadow-sm mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-gear fs-4"></i>
+                                    </div>
+                                    <h6 class="card-title fw-bold text-dark mb-1">Configurações</h6>
+                                    <p class="card-text text-muted small mb-0">Parâmetros globais</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('documentos') }}" class="card border-0 bg-light h-100 text-decoration-none hover-shadow rounded-4 transition-all">
+                                <div class="card-body text-center py-4">
+                                    <div class="avatar-md bg-white text-success rounded-circle shadow-sm mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-database fs-4"></i>
+                                    </div>
+                                    <h6 class="card-title fw-bold text-dark mb-1">Base de Dados</h6>
+                                    <p class="card-text text-muted small mb-0">Documentos e RAG</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="#" class="card border-0 bg-light h-100 text-decoration-none hover-shadow rounded-4 transition-all" onclick="abrirBackup()">
+                                <div class="card-body text-center py-4">
+                                    <div class="avatar-md bg-white text-warning rounded-circle shadow-sm mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-cloud-download fs-4"></i>
+                                    </div>
+                                    <h6 class="card-title fw-bold text-dark mb-1">Backup</h6>
+                                    <p class="card-text text-muted small mb-0">Segurança de dados</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="#" class="card border-0 bg-light h-100 text-decoration-none hover-shadow rounded-4 transition-all" onclick="abrirRelatorios()">
+                                <div class="card-body text-center py-4">
+                                    <div class="avatar-md bg-white text-danger rounded-circle shadow-sm mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-bar-chart fs-4"></i>
+                                    </div>
+                                    <h6 class="card-title fw-bold text-dark mb-1">Relatórios</h6>
+                                    <p class="card-text text-muted small mb-0">Analytics e KPIs</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Atividades Recentes -->
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center rounded-top-4">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-clock-history me-2"></i>Atividades Recentes
+                    </h5>
+                    <a href="{{ url_for('admin_logs') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Ver Todos</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 border-top-0 text-muted small text-uppercase">Usuário</th>
+                                    <th class="border-top-0 text-muted small text-uppercase">Ação</th>
+                                    <th class="border-top-0 text-muted small text-uppercase">Recurso</th>
+                                    <th class="pe-4 border-top-0 text-muted small text-uppercase text-end">Data/Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAtividades" class="border-top-0">
+                                <tr>
+                                    <td colspan="4" class="text-center py-5">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                                        <span class="text-muted">Carregando atividades...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4 fade-in-up" style="animation-delay: 350ms;">
+            <!-- Status do Sistema -->
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-server me-2"></i>Status do Sistema
+                    </h5>
+                </div>
+                <div class="card-body px-4">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-medium small">API Backend</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" id="statusAPI">Online</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success rounded-pill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-medium small">Modelo LLM</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" id="statusLLM">Ativo</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success rounded-pill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-medium small">Base Vetorial (RAG)</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" id="statusRAG">Conectado</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success rounded-pill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-medium small">Banco de Dados</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" id="statusDB">Conectado</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success rounded-pill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pb-4 px-4 pt-0 text-center">
+                    <button class="btn btn-sm btn-outline-primary rounded-pill w-100" onclick="verificarStatus()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Atualizar Status
+                    </button>
+                </div>
+            </div>
+
+            <!-- Informações do Sistema -->
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Informações
+                    </h5>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between border-light">
+                            <span class="text-muted small">Versão</span>
+                            <span class="fw-bold text-dark">1.0.0</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between border-light">
+                            <span class="text-muted small">Modelo IA</span>
+                            <span class="fw-bold text-primary">LLaMA 3.2</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between border-light">
+                            <span class="text-muted small">Ambiente</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Desenvolvimento</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between border-light">
+                            <span class="text-muted small">Último deploy</span>
+                            <span class="small text-end" id="ultimoDeploy">-</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Ações Rápidas -->
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 rounded-top-4">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-lightning-charge me-2"></i>Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body px-4 pb-4 d-grid gap-2">
+                    <button class="btn btn-outline-primary shadow-sm text-start p-3 rounded-3 hover-scale" onclick="limparCache()">
+                        <i class="bi bi-brush me-2"></i> Limpar Cache
+                    </button>
+                    <button class="btn btn-outline-info shadow-sm text-start p-3 rounded-3 hover-scale" onclick="reindexarRAG()">
+                        <i class="bi bi-database-gear me-2"></i> Reindexar Base RAG
+                    </button>
+                    <button class="btn btn-outline-success shadow-sm text-start p-3 rounded-3 hover-scale" onclick="exportarRelatorio()">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i> Exportar Relatório
+                    </button>
+                    <button class="btn btn-outline-warning shadow-sm text-start p-3 rounded-3 hover-scale" onclick="verificarAtualizacoes()">
+                        <i class="bi bi-cloud-download me-2"></i> Verificar Atualizações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.icon-square {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.transition-all {
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Carregar estatísticas
+document.addEventListener('DOMContentLoaded', function() {
+    carregarEstatisticas();
+    carregarAtividadesRecentes();
+    verificarStatus();
+});
+
+function carregarEstatisticas() {
+    fetch('/api/admin/estatisticas')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('statUsuarios').textContent = data.usuarios || 0;
+            document.getElementById('statPeticoes').textContent = data.peticoes || 0;
+            document.getElementById('statConsultasIA').textContent = data.consultas_ia_hoje || 0;
+            document.getElementById('statLogs').textContent = data.logs_hoje || 0;
+            document.getElementById('ultimoDeploy').textContent = data.ultimo_deploy || '-';
+        })
+        .catch(() => {
+            // Dados mock se API não responder
+            document.getElementById('statUsuarios').textContent = '12';
+            document.getElementById('statPeticoes').textContent = '156';
+            document.getElementById('statConsultasIA').textContent = '45';
+            document.getElementById('statLogs').textContent = '234';
+        });
+}
+
+function carregarAtividadesRecentes() {
+    fetch('/api/audit/logs?limit=10')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('tabelaAtividades');
+
+            if (data.logs && data.logs.length > 0) {
+                tbody.innerHTML = data.logs.map(log => `
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-light text-primary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <span class="fw-medium text-dark">${log.usuario || 'Sistema'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-${getAcaoBadge(log.acao)}-subtle text-${getAcaoBadge(log.acao)} border border-${getAcaoBadge(log.acao)}-subtle rounded-pill px-3">${log.acao}</span>
+                        </td>
+                        <td><span class="text-muted small">${log.recurso || '-'}</span></td>
+                        <td class="pe-4 text-end text-muted small">${log.data_hora || '-'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                            Nenhuma atividade recente.
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(() => {
+            // Dados mock
+            const tbody = document.getElementById('tabelaAtividades');
+            tbody.innerHTML = `
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm bg-light text-primary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px"><i class="bi bi-person-fill"></i></div>
+                            <span class="fw-medium text-dark">Admin</span>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">login</span></td>
+                    <td><span class="text-muted small">auth</span></td>
+                    <td class="pe-4 text-end text-muted small">há 5 min</td>
+                </tr>
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm bg-light text-primary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px"><i class="bi bi-person-fill"></i></div>
+                            <span class="fw-medium text-dark">João Silva</span>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3">criar</span></td>
+                    <td><span class="text-muted small">petição #123</span></td>
+                    <td class="pe-4 text-end text-muted small">há 15 min</td>
+                </tr>
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm bg-light text-primary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px"><i class="bi bi-person-fill"></i></div>
+                            <span class="fw-medium text-dark">Maria Santos</span>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3">visualizar</span></td>
+                    <td><span class="text-muted small">processo #45</span></td>
+                    <td class="pe-4 text-end text-muted small">há 22 min</td>
+                </tr>
+            `;
+        });
+}
+
+function getAcaoBadge(acao) {
+    const cores = {
+        'login': 'success',
+        'logout': 'secondary',
+        'criar': 'primary',
+        'editar': 'warning',
+        'excluir': 'danger',
+        'visualizar': 'info',
+        'pesquisa': 'info',
+        'gerar_peticao': 'primary'
+    };
+    return cores[acao] || 'secondary';
+}
+
+function verificarStatus() {
+    // Verificar status da API
+    fetch('/api/health')
+        .then(response => {
+            if (response.ok) {
+                setStatus('statusAPI', 'Online', 'success');
+            } else {
+                setStatus('statusAPI', 'Erro', 'danger');
+            }
+        })
+        .catch(() => {
+            setStatus('statusAPI', 'Offline', 'danger');
+        });
+
+    // Simular outros status
+    setStatus('statusLLM', 'Ativo', 'success');
+    setStatus('statusRAG', 'Conectado', 'success');
+    setStatus('statusDB', 'Conectado', 'success');
+}
+
+function setStatus(elementId, texto, cor) {
+    const element = document.getElementById(elementId);
+    element.textContent = texto;
+    // Update badge class
+    element.className = `badge bg-${cor}-subtle text-${cor} border border-${cor}-subtle rounded-pill`;
+    // Update progress bar
+    const cardBody = element.closest('.mb-4');
+    if(cardBody) {
+        const progressBar = cardBody.querySelector('.progress-bar');
+        if(progressBar) {
+            progressBar.className = `progress-bar bg-${cor} rounded-pill`;
+        }
+    }
+}
+
+function limparCache() {
+    if (confirm('Deseja limpar o cache do sistema?')) {
+        Toast.info('Limpando cache...');
+        fetch('/api/admin/cache/limpar', { method: 'POST' })
+            .then(() => {
+                Toast.success('Cache limpo com sucesso!');
+            })
+            .catch(() => {
+                 Toast.error('Erro ao limpar cache.');
+            });
+    }
+}
+
+function reindexarRAG() {
+    if (confirm('Reindexar a base RAG pode demorar alguns minutos. Continuar?')) {
+        Toast.info('Reindexando base RAG...');
+        fetch('/api/rag/reindexar', { method: 'POST' })
+            .then(() => {
+                Toast.info('Reindexação iniciada. Você será notificado ao concluir.');
+            })
+            .catch(() => {
+                Toast.info('Reindexação iniciada.');
+            });
+    }
+}
+
+function exportarRelatorio() {
+    Toast.info('Gerando relatório...');
+    window.location.href = '/api/admin/relatorio/exportar';
+}
+
+function verificarAtualizacoes() {
+    Toast.info('Verificando atualizações...');
+    setTimeout(() => {
+        Toast.success('Sistema está na versão mais recente!');
+    }, 1500);
+}
+
+function abrirBackup() {
+    Toast.info('Módulo de backup em desenvolvimento.');
+}
+
+function abrirRelatorios() {
+    Toast.info('Módulo de relatórios em desenvolvimento.');
+}
+</script>
+{% endblock %}

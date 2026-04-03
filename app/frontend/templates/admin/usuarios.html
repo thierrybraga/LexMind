@@ -1,0 +1,729 @@
+{% extends "base.html" %}
+
+{% block title %}Usuários - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Sticky -->
+    <div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white py-3 z-index-100 border-bottom">
+        <div>
+            <h2 class="mb-1 fw-bold text-primary-900"><i class="bi bi-people-fill me-2"></i>Usuários</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin') }}" class="text-decoration-none">Admin</a></li>
+                    <li class="breadcrumb-item active">Usuários</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <button class="btn btn-primary rounded-pill px-4 shadow-sm hover-scale" onclick="showNovoUsuarioModal()">
+                <i class="bi bi-person-plus me-2"></i>Novo Usuário
+            </button>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 100ms;">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-square bg-primary-subtle text-primary rounded-4 p-3 me-3">
+                        <i class="bi bi-people fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase fw-bold">Total</p>
+                        <h3 class="mb-0 fw-bold" id="totalUsuarios">-</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 150ms;">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-square bg-success-subtle text-success rounded-4 p-3 me-3">
+                        <i class="bi bi-person-check fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase fw-bold">Ativos</p>
+                        <h3 class="mb-0 fw-bold" id="usuariosAtivos">-</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 200ms;">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-square bg-warning-subtle text-warning rounded-4 p-3 me-3">
+                        <i class="bi bi-shield-lock fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase fw-bold">Admins</p>
+                        <h3 class="mb-0 fw-bold" id="admins">-</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3 fade-in-up" style="animation-delay: 250ms;">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale">
+                <div class="card-body d-flex align-items-center">
+                    <div class="icon-square bg-info-subtle text-info rounded-4 p-3 me-3">
+                        <i class="bi bi-clock fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase fw-bold">Online</p>
+                        <h3 class="mb-0 fw-bold" id="onlineAgora">-</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up" style="animation-delay: 300ms;">
+        <div class="card-body p-4">
+            <form id="filtrosForm" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" class="form-control bg-light border-start-0 ps-0" id="busca" placeholder="Nome, email ou OAB...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Perfil</label>
+                    <select class="form-select bg-light" id="filtroPerfil">
+                        <option value="">Todos</option>
+                        <option value="admin">Administrador</option>
+                        <option value="advogado">Advogado</option>
+                        <option value="estagiario">Estagiário</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
+                    <select class="form-select bg-light" id="filtroStatus">
+                        <option value="">Todos</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="bloqueado">Bloqueado</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                        Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Usuários -->
+    <div class="card border-0 shadow-sm rounded-4 fade-in-up" style="animation-delay: 350ms;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="px-4 py-3 text-uppercase small fw-bold text-muted border-0 rounded-top-start-4">Usuário</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted border-0">Email</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted border-0">Perfil</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted border-0">OAB</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted border-0">Status</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted border-0">Último Acesso</th>
+                            <th class="px-4 py-3 text-uppercase small fw-bold text-muted border-0 text-end rounded-top-end-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usuariosTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="text-muted mt-2 small">Carregando usuários...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo/Editar Usuário -->
+<div class="modal fade" id="usuarioModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary" id="usuarioModalTitulo">Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="usuarioForm" novalidate>
+                    <input type="hidden" id="usuarioId">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Nome Completo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control bg-light" id="nome" required placeholder="Ex: João da Silva">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control bg-light" id="email" required placeholder="email@exemplo.com">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Perfil <span class="text-danger">*</span></label>
+                            <select class="form-select bg-light" id="perfil" required onchange="toggleOAB()">
+                                <option value="">Selecione...</option>
+                                <option value="admin">Administrador</option>
+                                <option value="advogado">Advogado</option>
+                                <option value="estagiario">Estagiário</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="oabContainer">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Número OAB</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light" id="oabNumero" placeholder="123456">
+                                <select class="form-select bg-light" id="oabUF" style="max-width: 100px;">
+                                    <option value="MG">MG</option>
+                                    <option value="SP">SP</option>
+                                    <option value="RJ">RJ</option>
+                                    <option value="RS">RS</option>
+                                    <option value="PR">PR</option>
+                                    <option value="SC">SC</option>
+                                    <option value="BA">BA</option>
+                                    <option value="PE">PE</option>
+                                    <option value="CE">CE</option>
+                                    <option value="GO">GO</option>
+                                    <option value="DF">DF</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4" id="senhaContainer">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Senha <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" class="form-control bg-light border-end-0" id="senha" minlength="8" placeholder="Mínimo 8 caracteres">
+                                <button class="btn btn-light border border-start-0 text-muted" type="button" onclick="togglePassword(this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Confirmar Senha <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" class="form-control bg-light border-end-0" id="confirmarSenha" placeholder="Repita a senha">
+                                <button class="btn btn-light border border-start-0 text-muted" type="button" onclick="togglePassword(this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded-4 p-3 mb-3">
+                        <h6 class="fw-bold text-primary mb-3 small text-uppercase">Permissões de Acesso</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="permPesquisa" checked>
+                                    <label class="form-check-label small fw-semibold" for="permPesquisa">Pesquisa Jurídica</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="permPeticoes" checked>
+                                    <label class="form-check-label small fw-semibold" for="permPeticoes">Gerar Petições</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="permProcessos" checked>
+                                    <label class="form-check-label small fw-semibold" for="permProcessos">Gerenciar Processos</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="permDocumentos" checked>
+                                    <label class="form-check-label small fw-semibold" for="permDocumentos">Upload Documentos</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="permCNJ">
+                                    <label class="form-check-label small fw-semibold" for="permCNJ">Consulta CNJ</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="permAdmin">
+                                    <label class="form-check-label small fw-semibold" for="permAdmin">Administração</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-secondary-subtle">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
+                            <select class="form-select bg-light" id="status">
+                                <option value="ativo">Ativo</option>
+                                <option value="inativo">Inativo</option>
+                                <option value="bloqueado">Bloqueado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Limite Petições/Dia</label>
+                            <input type="number" class="form-control bg-light" id="limitePeticoes" value="10" min="1" max="100">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">Salvar Usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes/Auditoria -->
+<div class="modal fade" id="detalhesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalhes do Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detalhesContent">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function formatarDataHora(data) {
+        if (!data) return '-';
+        const d = new Date(data);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+    }
+</script>
+<script>
+let usuariosData = {{ usuarios | tojson }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderizarUsuarios();
+    atualizarEstatisticas();
+
+    document.getElementById('filtrosForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        renderizarUsuarios();
+    });
+
+    // Form Submit Handler
+    document.getElementById('usuarioForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!this.checkValidity()) {
+            e.stopPropagation();
+            this.classList.add('was-validated');
+            return;
+        }
+        salvarUsuario();
+    });
+});
+
+async function carregarUsuarios() {
+    try {
+        const response = await fetch('{{ url_for("admin_usuarios") }}', {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+        
+        if (!response.ok) throw new Error('Erro ao carregar usuários');
+        
+        const data = await response.json();
+        usuariosData = data.usuarios || [];
+        
+        renderizarUsuarios();
+        atualizarEstatisticas();
+    } catch (error) {
+        console.error(error);
+        if (typeof Toast !== 'undefined') Toast.error('Erro ao atualizar lista de usuários');
+    }
+}
+
+function renderizarUsuarios() {
+    const tbody = document.getElementById('usuariosTableBody');
+    const filtro = document.getElementById('busca').value.toLowerCase();
+    const perfil = document.getElementById('filtroPerfil').value;
+    const status = document.getElementById('filtroStatus').value;
+
+    const filtered = usuariosData.filter(u => {
+        const nome = (u.nome || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const oab = (u.oab || '').toLowerCase();
+        
+        const matchBusca = nome.includes(filtro) || email.includes(filtro) || oab.includes(filtro);
+        const matchPerfil = !perfil || u.perfil === perfil;
+        const matchStatus = !status || u.status === status;
+        return matchBusca && matchPerfil && matchStatus;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <div class="text-muted">
+                        <i class="bi bi-search fs-1 d-block mb-3 opacity-50"></i>
+                        <p class="mb-0">Nenhum usuário encontrado.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(u => `
+        <tr class="hover-bg-light transition-all">
+            <td class="px-4">
+                <div class="d-flex align-items-center">
+                    <div class="avatar me-3 shadow-sm" style="width: 40px; height: 40px; background: ${getPerfilColor(u.perfil)}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                        ${(u.nome || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">${u.nome || 'Sem Nome'}</div>
+                        <div class="small text-muted">ID: #${u.id}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="text-muted small fw-medium">${u.email}</td>
+            <td><span class="badge bg-${getPerfilBadge(u.perfil)}-subtle text-${getPerfilBadge(u.perfil)} border border-${getPerfilBadge(u.perfil)}-subtle rounded-pill px-3">${capitalizar(u.perfil)}</span></td>
+            <td class="text-muted small">${u.oab || '<span class="text-muted opacity-50">-</span>'}</td>
+            <td>
+                <span class="badge bg-${getStatusColor(u.status)}-subtle text-${getStatusColor(u.status)} border border-${getStatusColor(u.status)}-subtle rounded-pill px-3">
+                    <i class="bi bi-circle-fill me-1" style="font-size: 6px; vertical-align: middle;"></i>${capitalizar(u.status)}
+                </span>
+            </td>
+            <td class="text-muted small">
+                <div><i class="bi bi-calendar3 me-1"></i>${new Date(u.ultimoAcesso).toLocaleDateString('pt-BR')}</div>
+                <div class="opacity-75"><i class="bi bi-clock me-1"></i>${new Date(u.ultimoAcesso).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</div>
+            </td>
+            <td class="px-4 text-end">
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4">
+                        <li><a class="dropdown-item py-2 small fw-medium" href="#" onclick="verDetalhes(${u.id})"><i class="bi bi-eye me-2 text-primary"></i>Ver Detalhes</a></li>
+                        <li><a class="dropdown-item py-2 small fw-medium" href="#" onclick="editarUsuario(${u.id})"><i class="bi bi-pencil me-2 text-warning"></i>Editar</a></li>
+                        <li><a class="dropdown-item py-2 small fw-medium" href="#" onclick="resetarSenha(${u.id})"><i class="bi bi-key me-2 text-info"></i>Resetar Senha</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        ${u.status !== 'bloqueado' ? `
+                            <li><a class="dropdown-item py-2 small fw-medium text-danger" href="#" onclick="bloquearUsuario(${u.id})"><i class="bi bi-slash-circle me-2"></i>Bloquear</a></li>
+                        ` : `
+                            <li><a class="dropdown-item py-2 small fw-medium text-success" href="#" onclick="desbloquearUsuario(${u.id})"><i class="bi bi-check-lg me-2"></i>Desbloquear</a></li>
+                        `}
+                    </ul>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function atualizarEstatisticas() {
+    document.getElementById('totalUsuarios').textContent = usuariosData.length;
+    document.getElementById('usuariosAtivos').textContent = usuariosData.filter(u => u.status === 'ativo').length;
+    document.getElementById('admins').textContent = usuariosData.filter(u => u.perfil === 'admin').length;
+    document.getElementById('onlineAgora').textContent = '2'; // Simulado
+}
+
+function getPerfilColor(perfil) {
+    const cores = { 'admin': '#dc3545', 'advogado': '#0d6efd', 'estagiario': '#6c757d' };
+    return cores[perfil] || '#6c757d';
+}
+
+function getPerfilBadge(perfil) {
+    const badges = { 'admin': 'danger', 'advogado': 'primary', 'estagiario': 'secondary' };
+    return badges[perfil] || 'secondary';
+}
+
+function getStatusColor(status) {
+    const cores = { 'ativo': 'success', 'inativo': 'secondary', 'bloqueado': 'danger' };
+    return cores[status] || 'secondary';
+}
+
+function capitalizar(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function showNovoUsuarioModal() {
+    const form = document.getElementById('usuarioForm');
+    form.reset();
+    form.classList.remove('was-validated');
+    
+    document.getElementById('usuarioId').value = '';
+    document.getElementById('usuarioModalTitulo').textContent = 'Novo Usuário';
+    
+    // Show password fields
+    const senhaContainer = document.getElementById('senhaContainer');
+    if(senhaContainer) senhaContainer.style.display = 'flex';
+    
+    document.getElementById('senha').required = true;
+    document.getElementById('confirmarSenha').required = true;
+    
+    // Reset permissions
+    document.querySelectorAll('.form-check-input').forEach(chk => chk.checked = false);
+    // Defaults
+    if(document.getElementById('permPesquisa')) document.getElementById('permPesquisa').checked = true;
+    if(document.getElementById('permPeticoes')) document.getElementById('permPeticoes').checked = true;
+    
+    new bootstrap.Modal(document.getElementById('usuarioModal')).show();
+}
+
+function editarUsuario(id) {
+    const usuario = usuariosData.find(u => u.id === id);
+    if (!usuario) return;
+
+    const form = document.getElementById('usuarioForm');
+    form.classList.remove('was-validated');
+
+    document.getElementById('usuarioId').value = usuario.id;
+    document.getElementById('nome').value = usuario.nome;
+    document.getElementById('email').value = usuario.email;
+    document.getElementById('perfil').value = usuario.perfil;
+    document.getElementById('status').value = usuario.status;
+
+    if (usuario.oab) {
+        const match = usuario.oab.match(/OAB\/(\w+)\s+(\d+)/);
+        if (match) {
+             document.getElementById('oabUF').value = match[1];
+             document.getElementById('oabNumero').value = match[2];
+        } else {
+             document.getElementById('oabNumero').value = usuario.oab;
+        }
+    } else {
+        document.getElementById('oabNumero').value = '';
+    }
+
+    document.getElementById('usuarioModalTitulo').textContent = 'Editar Usuário';
+    
+    // Hide password fields for edit
+    const senhaContainer = document.getElementById('senhaContainer');
+    if(senhaContainer) senhaContainer.style.display = 'none';
+    
+    document.getElementById('senha').required = false;
+    document.getElementById('confirmarSenha').required = false;
+
+    toggleOAB();
+    new bootstrap.Modal(document.getElementById('usuarioModal')).show();
+}
+
+function toggleOAB() {
+    const perfil = document.getElementById('perfil').value;
+    const oabContainer = document.getElementById('oabContainer');
+    if(oabContainer) {
+        // Use visibility or opacity for smoother transition if desired, but display is fine
+        oabContainer.style.display = perfil === 'advogado' ? 'block' : 'none';
+        
+        // Add/remove required based on visibility
+        const oabInput = document.getElementById('oabNumero');
+        if(oabInput) oabInput.required = (perfil === 'advogado');
+    }
+}
+
+async function salvarUsuario() {
+    const id = document.getElementById('usuarioId').value;
+    const nome = document.getElementById('nome').value;
+    const email = document.getElementById('email').value;
+    const perfil = document.getElementById('perfil').value;
+    const oabNumero = document.getElementById('oabNumero').value;
+    const oabUF = document.getElementById('oabUF').value;
+    const status = document.getElementById('status').value;
+    const limitePeticoes = document.getElementById('limitePeticoes').value;
+    
+    const senha = document.getElementById('senha').value;
+    const confirmar = document.getElementById('confirmarSenha').value;
+
+    if (!id && senha !== confirmar) {
+        if (typeof Toast !== 'undefined') Toast.error('As senhas não conferem');
+        return;
+    }
+    
+    if (!id && !senha) {
+         if (typeof Toast !== 'undefined') Toast.error('Senha é obrigatória para novos usuários');
+         return;
+    }
+
+    const payload = {
+        nome, email, perfil, status, 
+        limite_peticoes: parseInt(limitePeticoes),
+        oab: perfil === 'advogado' ? `OAB/${oabUF} ${oabNumero}` : null
+    };
+
+    if (id) {
+        if (senha) payload.senha = senha;
+    } else {
+        payload.senha = senha;
+    }
+
+    try {
+        const method = id ? 'PUT' : 'POST';
+        // Flask url_for generation handled by template
+        const baseUrl = '{{ url_for("admin_usuarios") }}';
+        const url = id ? `${baseUrl}/${id}` : baseUrl;
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+             const err = await response.json();
+             throw new Error(err.error || 'Erro ao salvar usuário');
+        }
+        
+        if (typeof Toast !== 'undefined') Toast.success('Usuário salvo com sucesso!');
+        
+        const modalEl = document.getElementById('usuarioModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if(modal) modal.hide();
+        
+        carregarUsuarios();
+        
+    } catch (error) {
+        console.error(error);
+        if (typeof Toast !== 'undefined') Toast.error(error.message);
+    }
+}
+
+async function bloquearUsuario(id) {
+    if(!confirm('Tem certeza que deseja bloquear este usuário?')) return;
+    try {
+        const response = await fetch(`{{ url_for('admin_usuarios') }}/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+            body: JSON.stringify({status: 'bloqueado'})
+        });
+        if(response.ok) {
+            if (typeof Toast !== 'undefined') Toast.success('Usuário bloqueado');
+            carregarUsuarios();
+        } else {
+            if (typeof Toast !== 'undefined') Toast.error('Erro ao bloquear usuário');
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function desbloquearUsuario(id) {
+    if(!confirm('Tem certeza que deseja desbloquear este usuário?')) return;
+    try {
+        const response = await fetch(`{{ url_for('admin_usuarios') }}/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+            body: JSON.stringify({status: 'ativo'})
+        });
+        if(response.ok) {
+            if (typeof Toast !== 'undefined') Toast.success('Usuário desbloqueado');
+            carregarUsuarios();
+        } else {
+            if (typeof Toast !== 'undefined') Toast.error('Erro ao desbloquear usuário');
+        }
+    } catch(e) { console.error(e); }
+}
+
+function resetarSenha(id) {
+    alert('Funcionalidade de reset de senha a ser implementada');
+}
+
+function verDetalhes(id) {
+    const usuario = usuariosData.find(u => u.id === id);
+    if (!usuario) return;
+
+    const content = document.getElementById('detalhesContent');
+    if(!content) return;
+    
+    content.innerHTML = `
+        <div class="row g-4">
+            <div class="col-md-6 border-end">
+                <h6 class="fw-bold text-primary text-uppercase small mb-3">Informações Pessoais</h6>
+                <div class="mb-3">
+                    <label class="small text-muted fw-bold text-uppercase">Nome</label>
+                    <div class="fw-medium">${usuario.nome}</div>
+                </div>
+                <div class="mb-3">
+                    <label class="small text-muted fw-bold text-uppercase">Email</label>
+                    <div class="fw-medium">${usuario.email}</div>
+                </div>
+                <div class="mb-3">
+                    <label class="small text-muted fw-bold text-uppercase">Perfil</label>
+                    <div><span class="badge bg-${getPerfilBadge(usuario.perfil)}-subtle text-${getPerfilBadge(usuario.perfil)} border border-${getPerfilBadge(usuario.perfil)}-subtle rounded-pill px-3">${capitalizar(usuario.perfil)}</span></div>
+                </div>
+                <div class="mb-3">
+                    <label class="small text-muted fw-bold text-uppercase">OAB</label>
+                    <div class="fw-medium">${usuario.oab || '-'}</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold text-primary text-uppercase small mb-3">Atividade e Status</h6>
+                 <div class="mb-3">
+                    <label class="small text-muted fw-bold text-uppercase">Status</label>
+                    <div><span class="badge bg-${getStatusColor(usuario.status)}-subtle text-${getStatusColor(usuario.status)} border border-${getStatusColor(usuario.status)}-subtle rounded-pill px-3">${capitalizar(usuario.status)}</span></div>
+                </div>
+                <div class="card bg-light border-0 rounded-4 mb-3">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-clock text-primary me-2"></i>
+                            <span class="small text-muted">Último Acesso:</span>
+                        </div>
+                        <div class="fw-bold text-dark ms-4">${formatarDataHora(usuario.ultimoAcesso)}</div>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                        <span class="text-muted">Petições hoje</span>
+                        <span class="fw-bold">3</span>
+                    </li>
+                    <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+                        <span class="text-muted">Pesquisas hoje</span>
+                        <span class="fw-bold">12</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    // Ensure modal dialog has centered class if not already
+    const modalDialog = document.querySelector('#detalhesModal .modal-dialog');
+    if(modalDialog) modalDialog.classList.add('modal-dialog-centered');
+    
+    // Ensure modal content has rounded class
+    const modalContent = document.querySelector('#detalhesModal .modal-content');
+    if(modalContent) modalContent.classList.add('rounded-4', 'border-0', 'shadow-lg');
+    
+    new bootstrap.Modal(document.getElementById('detalhesModal')).show();
+}
+
+
+function togglePassword(btn) {
+    const input = btn.previousElementSibling;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+    } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="bi bi-eye"></i>';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas Petições - {{ app_name }}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <div>
+        <h4 class="mb-1 fw-bold text-gradient"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Minhas Petições</h4>
+        <p class="text-muted mb-0">Gerencie suas petições e documentos jurídicos</p>
+    </div>
+    <div>
+        <a href="{{ url_for('peticao_nova') }}" class="btn btn-primary shadow-sm hover-scale">
+            <i class="bi bi-plus-circle me-2"></i>Nova Petição
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4 fade-in delay-1">
+    <div class="card-body py-3">
+        <form class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Buscar petições..." name="q" id="searchInput" aria-label="Buscar petições">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="tipo" id="filterTipo" aria-label="Filtrar por tipo">
+                    <option value="">Todos os tipos</option>
+                    <option value="inicial">Petição Inicial</option>
+                    <option value="contestacao">Contestação</option>
+                    <option value="recurso">Recurso</option>
+                    <option value="apelacao">Apelação</option>
+                    <option value="agravo">Agravo</option>
+                    <option value="embargos">Embargos</option>
+                    <option value="habeas_corpus">Habeas Corpus</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status" id="filterStatus" aria-label="Filtrar por status">
+                    <option value="">Todos os status</option>
+                    <option value="rascunho">Rascunho</option>
+                    <option value="finalizado">Finalizado</option>
+                    <option value="exportado">Exportado</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="ordem" id="filterOrdem" aria-label="Ordenar por">
+                    <option value="recente">Mais recentes</option>
+                    <option value="antigo">Mais antigos</option>
+                    <option value="titulo">Por título</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-secondary w-100" onclick="limparFiltros()">
+                    <i class="bi bi-x-circle me-1"></i>Limpar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Petitions List -->
+<div class="row g-3 stagger-in" id="peticoesContainer">
+    <!-- Initial server-side render can stay here for SEO/first paint, but will be replaced by JS if filters change -->
+    {% if peticoes %}
+        {% for peticao in peticoes %}
+        <div class="col-md-6 col-lg-4 peticao-item fade-in" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+            <div class="card border-0 h-100 card-hover shadow-sm transition-all">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
+                    <span class="badge rounded-pill
+                        {% if peticao.tipo == 'inicial' %}bg-primary-subtle text-primary
+                        {% elif peticao.tipo == 'contestacao' %}bg-danger-subtle text-danger
+                        {% elif peticao.tipo == 'recurso' %}bg-warning-subtle text-warning-emphasis
+                        {% elif peticao.tipo == 'apelacao' %}bg-info-subtle text-info-emphasis
+                        {% elif peticao.tipo == 'habeas_corpus' %}bg-dark-subtle text-dark-emphasis
+                        {% else %}bg-secondary-subtle text-secondary{% endif %}">
+                        {{ peticao.tipo|replace('_', ' ')|capitalize }}
+                    </span>
+                    <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>{{ peticao.criado_em }}</small>
+                </div>
+                <div class="card-body pt-0">
+                    <h6 class="card-title fw-bold mb-2 text-truncate-2">
+                        <a href="{{ url_for('peticao_ver', id=peticao.id) }}" class="text-decoration-none text-dark stretched-link">
+                            {{ peticao.titulo|truncate(60) }}
+                        </a>
+                    </h6>
+                    {% if peticao.numero_processo %}
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-folder me-1"></i>
+                        <span class="font-monospace">{{ peticao.numero_processo }}</span>
+                    </p>
+                    {% endif %}
+                    <p class="card-text text-muted small text-truncate-2">
+                        {{ peticao.resumo|default(peticao.conteudo|striptags)|truncate(100) }}
+                    </p>
+
+                    <div class="d-flex align-items-center gap-2 mt-3">
+                        {% if peticao.gerado_ia %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle" title="Gerado com IA">
+                            <i class="bi bi-stars me-1"></i>IA
+                        </span>
+                        {% endif %}
+                        {% if peticao.confianca_ia %}
+                        <span class="badge bg-light text-dark border" title="Confiança da IA">
+                            <i class="bi bi-graph-up-arrow me-1 text-success"></i>{{ peticao.confianca_ia }}%
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge rounded-pill
+                            {% if peticao.status == 'rascunho' %}bg-warning-subtle text-warning-emphasis
+                            {% elif peticao.status == 'finalizado' %}bg-success-subtle text-success
+                            {% else %}bg-secondary-subtle text-secondary{% endif %}">
+                            <span class="status-dot me-1"></span>{{ peticao.status|capitalize }}
+                        </span>
+                        
+                        <div class="d-flex gap-1 position-relative" style="z-index: 2;">
+                            <a href="{{ url_for('peticao_editar', id=peticao.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Exportar" aria-label="Exportar">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li><h6 class="dropdown-header">Exportar como</h6></li>
+                                    <li><a class="dropdown-item small" href="{{ url_for('peticao_exportar', id=peticao.id, formato='docx') }}"><i class="bi bi-file-earmark-word me-2 text-primary"></i>DOCX (Word)</a></li>
+                                    <li><a class="dropdown-item small" href="{{ url_for('peticao_exportar', id=peticao.id, formato='pdf') }}"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF Document</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm text-center py-5 fade-in delay-1">
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="rounded-circle bg-primary-subtle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-file-earmark-text text-primary fs-1"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark">Nenhuma petição encontrada</h5>
+                <p class="text-muted mb-4 max-w-md mx-auto">Você ainda não criou nenhuma petição. Comece agora com o auxílio da nossa Inteligência Artificial!</p>
+                <a href="{{ url_for('peticao_nova') }}" class="btn btn-primary px-4 py-2 hover-scale">
+                    <i class="bi bi-plus-circle me-2"></i>Criar Primeira Petição
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="Navegação de páginas">
+        <ul class="pagination pagination-sm shadow-sm" id="paginacao">
+            <!-- Server-side rendered pagination for first load -->
+            {% if total_pages > 1 %}
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="#" onclick="carregarPeticoes({{ page - 1 }}); return false;">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="#" onclick="carregarPeticoes({{ p }}); return false;">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 3 or p == page + 3 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="#" onclick="carregarPeticoes({{ page + 1 }}); return false;">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+    {{ super() }}
+<script>
+// Debounce helper
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Event Listeners
+document.getElementById('searchInput').addEventListener('input', debounce(() => carregarPeticoes(1), 500));
+document.getElementById('filterTipo').addEventListener('change', () => carregarPeticoes(1));
+document.getElementById('filterStatus').addEventListener('change', () => carregarPeticoes(1));
+document.getElementById('filterOrdem').addEventListener('change', () => carregarPeticoes(1));
+
+async function carregarPeticoes(page = 1) {
+    const search = document.getElementById('searchInput').value;
+    const tipo = document.getElementById('filterTipo').value;
+    const status = document.getElementById('filterStatus').value;
+    const ordem = document.getElementById('filterOrdem').value;
+    
+    const params = new URLSearchParams({
+        page: page,
+        q: search,
+        tipo: tipo,
+        status: status,
+        ordem: ordem,
+        limit: 9
+    });
+    
+    const container = document.getElementById('peticoesContainer');
+    
+    // Loading state
+    container.style.opacity = '0.5';
+    
+    try {
+        const response = await fetch(`{{ url_for('peticoes') }}?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error('Erro ao carregar petições');
+        
+        const data = await response.json();
+        renderizarPeticoes(data.peticoes);
+        renderizarPaginacao(data.total_pages, data.page);
+        
+    } catch (error) {
+        console.error(error);
+        if (typeof Toast !== 'undefined') Toast.error('Erro ao carregar petições.');
+    } finally {
+        container.style.opacity = '1';
+    }
+}
+
+function renderizarPeticoes(peticoes) {
+    const container = document.getElementById('peticoesContainer');
+    
+    if (!peticoes || peticoes.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="card border-0 shadow-sm text-center py-5 fade-in">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="bi bi-search text-muted fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold text-dark">Nenhum resultado encontrado</h5>
+                        <p class="text-muted mb-0">Tente ajustar seus filtros de busca.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = peticoes.map((p, index) => {
+        // Helpers para badge classes
+        const tipo = p.tipo || 'outros';
+        const status = p.status || 'rascunho';
+        const tituloOriginal = p.titulo || 'Sem Título';
+        
+        let tipoClass = 'bg-secondary-subtle text-secondary';
+        if (tipo === 'inicial') tipoClass = 'bg-primary-subtle text-primary';
+        else if (tipo === 'contestacao') tipoClass = 'bg-danger-subtle text-danger';
+        else if (tipo === 'recurso') tipoClass = 'bg-warning-subtle text-warning-emphasis';
+        else if (tipo === 'apelacao') tipoClass = 'bg-info-subtle text-info-emphasis';
+        else if (tipo === 'habeas_corpus') tipoClass = 'bg-dark-subtle text-dark-emphasis';
+        
+        let statusClass = 'bg-secondary-subtle text-secondary';
+        if (status === 'rascunho') statusClass = 'bg-warning-subtle text-warning-emphasis';
+        else if (status === 'finalizado') statusClass = 'bg-success-subtle text-success';
+        
+        // Truncate helpers
+        const titulo = tituloOriginal.length > 60 ? tituloOriginal.substring(0, 60) + '...' : tituloOriginal;
+        const resumoContent = p.resumo || (p.conteudo ? p.conteudo.replace(/<[^>]*>?/gm, '') : '');
+        const resumo = resumoContent.length > 100 ? resumoContent.substring(0, 100) + '...' : resumoContent;
+        
+        return `
+        <div class="col-md-6 col-lg-4 peticao-item fade-in" style="animation-delay: ${index * 0.1}s">
+            <div class="card border-0 h-100 card-hover shadow-sm transition-all">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
+                    <span class="badge rounded-pill ${tipoClass}">
+                        ${tipo.replace('_', ' ')}
+                    </span>
+                    <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>${p.criado_em || ''}</small>
+                </div>
+                <div class="card-body pt-0">
+                    <h6 class="card-title fw-bold mb-2 text-truncate-2">
+                        <a href="/peticoes/${p.id}" class="text-decoration-none text-dark stretched-link">
+                            ${titulo}
+                        </a>
+                    </h6>
+                    ${p.numero_processo ? `
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-folder me-1"></i>
+                        <span class="font-monospace">${p.numero_processo}</span>
+                    </p>` : ''}
+                    <p class="card-text text-muted small text-truncate-2">
+                        ${resumo}
+                    </p>
+
+                    <div class="d-flex align-items-center gap-2 mt-3">
+                        ${p.gerado_ia ? `
+                        <span class="badge bg-success-subtle text-success border border-success-subtle" title="Gerado com IA">
+                            <i class="bi bi-stars me-1"></i>IA
+                        </span>` : ''}
+                        ${p.confianca_ia ? `
+                        <span class="badge bg-light text-dark border" title="Confiança da IA">
+                            <i class="bi bi-graph-up-arrow me-1 text-success"></i>${p.confianca_ia}%
+                        </span>` : ''}
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge rounded-pill ${statusClass}">
+                            <span class="status-dot me-1"></span>${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                        
+                        <div class="d-flex gap-1 position-relative" style="z-index: 2;">
+                            <a href="/peticoes/${p.id}/editar" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Exportar" aria-label="Exportar">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li><h6 class="dropdown-header">Exportar como</h6></li>
+                                    <li><a class="dropdown-item small" href="/peticoes/${p.id}/exportar?formato=docx"><i class="bi bi-file-earmark-word me-2 text-primary"></i>DOCX (Word)</a></li>
+                                    <li><a class="dropdown-item small" href="/peticoes/${p.id}/exportar?formato=pdf"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>PDF Document</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+function renderizarPaginacao(totalPages, currentPage) {
+    const paginacao = document.getElementById('paginacao');
+    if (totalPages <= 1) {
+        paginacao.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    
+    // Anterior
+    html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="carregarPeticoes(${currentPage - 1}); return false;">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+    `;
+
+    // Páginas
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="carregarPeticoes(${i}); return false;">${i}</a>
+                </li>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+
+    // Próximo
+    html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="carregarPeticoes(${currentPage + 1}); return false;">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    `;
+
+    paginacao.innerHTML = html;
+}
+
+function limparFiltros() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterTipo').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterOrdem').value = 'recente';
+    carregarPeticoes(1);
+}
+</script>
+{% endblock %}

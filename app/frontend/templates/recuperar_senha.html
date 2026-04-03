@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Recuperar Senha - {{ app_name }}{% endblock %}
+{% block body_class %}login-page{% endblock %}
+
+{% block public_content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100 py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                
+                <!-- Brand Logo -->
+                <div class="text-center mb-5 fade-in-up">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-lg mb-3 hover-scale" style="width: 80px; height: 80px;">
+                        <i class="bi bi-shield-lock-fill fs-1"></i>
+                    </div>
+                    <h2 class="fw-bold text-primary-900 mb-1">Recuperação</h2>
+                    <p class="text-muted">Restabeleça seu acesso ao sistema</p>
+                </div>
+
+                <div class="card shadow-xl border-0 fade-in-up delay-100 rounded-4 backdrop-blur">
+                    <div class="card-body p-4 p-md-5">
+                        
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold mb-2 text-primary">Esqueceu sua senha?</h5>
+                            <p class="text-muted small">Digite seu email abaixo e enviaremos instruções para redefinir sua senha.</p>
+                        </div>
+
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category if category != 'message' else 'info' }} d-flex align-items-center py-2 mb-3 small border-0 bg-{{ category if category != 'message' else 'info' }}-subtle text-{{ category if category != 'message' else 'info' }}-emphasis rounded-3" role="alert">
+                                        <i class="bi bi-info-circle-fill me-2"></i>
+                                        <div>{{ message }}</div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="POST" id="recoverForm" class="needs-validation" novalidate>
+                            <div class="mb-4">
+                                <label for="email" class="form-label small fw-semibold text-uppercase text-muted">Email Cadastrado</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-envelope text-muted"></i></span>
+                                    <input type="email" class="form-control bg-light border-start-0 rounded-end-pill ps-0" id="email" name="email" placeholder="seu@email.com" required autofocus autocomplete="email">
+                                </div>
+                                <div class="invalid-feedback small">
+                                    Por favor, insira um email válido.
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm mb-4 hover-scale transition-all" id="btnSubmit">
+                                <i class="bi bi-send me-2"></i>Enviar Instruções
+                            </button>
+
+                            <div class="text-center">
+                                <a href="{{ url_for('login') }}" class="text-decoration-none fw-bold small text-primary hover-scale d-inline-block">
+                                    <i class="bi bi-arrow-left me-1"></i>Voltar ao Login
+                                </a>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center mt-4 fade-in-up delay-200">
+                    <small class="text-muted opacity-75" style="font-size: 0.75rem;">
+                        &copy; {{ current_year }} IA Jurídica
+                    </small>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('recoverForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email');
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!regex.test(email.value)) {
+        e.preventDefault();
+        email.classList.add('is-invalid');
+        email.focus();
+        return;
+    }
+    
+    email.classList.remove('is-invalid');
+    const btn = document.getElementById('btnSubmit');
+    
+    // Add loading state
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+    
+    // If form submission is handled via AJAX in a real app, we'd do fetch here.
+    // Since it's a standard POST, we just let it submit after UI update.
+    // However, to show the loading state briefly if it's fast:
+    // e.preventDefault();
+    // this.submit();
+});
+
+document.getElementById('email').addEventListener('input', function() {
+    this.classList.remove('is-invalid');
+});
+</script>
+{% endblock %}

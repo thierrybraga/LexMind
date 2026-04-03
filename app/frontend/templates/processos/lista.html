@@ -1,0 +1,564 @@
+{% extends "base.html" %}
+
+{% block title %}Processos - IA Jurídica{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+    <div>
+        <h2 class="mb-1 fw-bold text-gradient"><i class="bi bi-hammer me-2 text-primary"></i>Processos</h2>
+        <p class="text-muted mb-0">Gerencie e acompanhe seus processos judiciais</p>
+    </div>
+    <div>
+        <button class="btn btn-primary rounded-pill px-4 shadow-sm hover-scale" onclick="showNovoProcessoModal()">
+            <i class="bi bi-plus-lg me-2"></i>Novo Processo
+        </button>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 fade-in-up delay-100">
+    <div class="card-body py-3">
+        <form id="filtrosForm" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-uppercase text-muted">Número CNJ</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-hash text-muted"></i></span>
+                    <input type="text" class="form-control bg-light border-0" id="filtroNumero" name="numero" placeholder="0000000-00.0000.0.00.0000">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-uppercase text-muted">Área</label>
+                <select class="form-select bg-light border-0" id="filtroArea" name="area">
+                    <option value="">Todas</option>
+                    <option value="civil">Cível</option>
+                    <option value="penal">Criminal</option>
+                    <option value="trabalhista">Trabalhista</option>
+                    <option value="tributario">Tributário</option>
+                    <option value="familia">Família</option>
+                    <option value="consumidor">Consumidor</option>
+                    <option value="administrativo">Administrativo</option>
+                    <option value="previdenciario">Previdenciário</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-uppercase text-muted">Status</label>
+                <select class="form-select bg-light border-0" id="filtroStatus" name="status">
+                    <option value="">Todos</option>
+                    <option value="ativo">Ativo</option>
+                    <option value="arquivado">Arquivado</option>
+                    <option value="suspenso">Suspenso</option>
+                    <option value="baixado">Baixado</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-uppercase text-muted">Cliente</label>
+                <input type="text" class="form-control bg-light border-0" id="filtroCliente" name="cliente" placeholder="Nome do cliente">
+            </div>
+            <div class="col-md-2">
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary rounded-pill shadow-sm hover-scale">
+                        <i class="bi bi-funnel me-2"></i>Filtrar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Processos -->
+<div class="card border-0 shadow-sm rounded-4 fade-in-up delay-200">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center rounded-top-4">
+        <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-list-ul me-2"></i>Lista de Processos</h6>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary rounded-pill me-2 px-3" onclick="exportarProcessos('excel')">
+                <i class="bi bi-file-earmark-excel me-1"></i> Excel
+            </button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="exportarProcessos('pdf')">
+                <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 text-muted small fw-bold text-uppercase border-0">Número CNJ / Área</th>
+                        <th class="text-muted small fw-bold text-uppercase border-0">Partes</th>
+                        <th class="text-muted small fw-bold text-uppercase border-0">Vara / Tribunal</th>
+                        <th class="text-muted small fw-bold text-uppercase border-0">Status</th>
+                        <th class="text-muted small fw-bold text-uppercase border-0">Última Movimentação</th>
+                        <th class="text-end pe-4 text-muted small fw-bold text-uppercase border-0">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="processosTableBody" class="border-top-0">
+                    {% if processos %}
+                        {% for p in processos %}
+                        <tr class="cursor-pointer" onclick="window.location.href='{{ url_for('processo_ver', id=p.id) }}'">
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">{{ p.numero }}</div>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fw-normal mt-1">{{ p.area|title }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium text-dark mb-1"><i class="bi bi-person-fill text-success me-1"></i>{{ p.autor }}</span>
+                                    <span class="text-muted small"><i class="bi bi-person-fill-slash text-danger me-1"></i>{{ p.reu }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-medium">{{ p.vara }}</div>
+                                <small class="text-muted">{{ p.tribunal }}</small>
+                            </td>
+                            <td>
+                                {% if p.status == 'ativo' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Ativo</span>
+                                {% elif p.status == 'arquivado' %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Arquivado</span>
+                                {% else %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">{{ p.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="text-muted small">{{ p.ultima_movimentacao_data|default('-') }}</div>
+                                <div class="text-truncate small text-muted" style="max-width: 200px;" title="{{ p.ultima_movimentacao_descricao }}">
+                                    {{ p.ultima_movimentacao_descricao|default('') }}
+                                </div>
+                            </td>
+                            <td class="text-end pe-4" onclick="event.stopPropagation()">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3">
+                                        <li><a class="dropdown-item" href="{{ url_for('processo_ver', id=p.id) }}"><i class="bi bi-eye me-2"></i>Ver Detalhes</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('peticao_nova') }}?processo_id={{ p.id }}"><i class="bi bi-file-earmark-plus me-2"></i>Nova Petição</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="arquivarProcesso({{ p.id }})"><i class="bi bi-archive me-2"></i>Arquivar</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-folder2-open display-4 text-muted opacity-25"></i>
+                                </div>
+                                <p class="text-muted mb-0">Nenhum processo encontrado.</p>
+                                <button class="btn btn-sm btn-primary mt-3 rounded-pill shadow-sm" onclick="showNovoProcessoModal()">
+                                    <i class="bi bi-plus-lg me-1"></i> Cadastrar Processo
+                                </button>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-top-0 py-3 rounded-bottom-4">
+        <nav aria-label="Paginação">
+            <ul class="pagination justify-content-center mb-0" id="paginacao">
+                <!-- Paginação será injetada via JS se necessário, ou implementada via Jinja -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal Novo Processo -->
+<div class="modal fade" id="novoProcessoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-lg me-2"></i>Novo Processo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="novoProcessoForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control bg-light border-0" id="numeroCNJ" name="numero" placeholder="CNJ" required
+                                       pattern="\d{7}-\d{2}\.\d{4}\.\d{1}\.\d{2}\.\d{4}">
+                                <label for="numeroCNJ">Número CNJ *</label>
+                            </div>
+                            <div class="form-text small"><i class="bi bi-info-circle me-1"></i>Formato: NNNNNNN-DD.AAAA.J.TR.OOOO</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select bg-light border-0" id="areaProcesso" name="area_direito" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="civil">Cível</option>
+                                    <option value="penal">Criminal</option>
+                                    <option value="trabalhista">Trabalhista</option>
+                                    <option value="tributario">Tributário</option>
+                                    <option value="familia">Família</option>
+                                    <option value="consumidor">Consumidor</option>
+                                    <option value="administrativo">Administrativo</option>
+                                    <option value="previdenciario">Previdenciário</option>
+                                </select>
+                                <label for="areaProcesso">Área do Direito *</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select bg-light border-0" id="tribunal" name="tribunal" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="TJMG">TJMG - Tribunal de Justiça de Minas Gerais</option>
+                                    <option value="TJSP">TJSP - Tribunal de Justiça de São Paulo</option>
+                                    <option value="TJRJ">TJRJ - Tribunal de Justiça do Rio de Janeiro</option>
+                                    <option value="TRF1">TRF1 - Tribunal Regional Federal 1ª Região</option>
+                                    <option value="TRT3">TRT3 - Tribunal Regional do Trabalho 3ª Região</option>
+                                    <option value="STJ">STJ - Superior Tribunal de Justiça</option>
+                                    <option value="STF">STF - Supremo Tribunal Federal</option>
+                                </select>
+                                <label for="tribunal">Tribunal *</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control bg-light border-0" id="vara" name="vara" placeholder="Vara">
+                                <label for="vara">Vara/Câmara</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mt-2 mb-3"><i class="bi bi-people me-2"></i>Partes</h6>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control bg-light border-0" id="autor" name="autor" placeholder="Autor" required>
+                                <label for="autor">Autor/Requerente *</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control bg-light border-0" id="cpfAutor" name="autor_cpf" placeholder="CPF Autor">
+                                <label for="cpfAutor">CPF/CNPJ do Autor</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control bg-light border-0" id="reu" name="reu" placeholder="Réu" required>
+                                <label for="reu">Réu/Requerido *</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" class="form-control bg-light border-0" id="cpfReu" name="reu_cpf" placeholder="CPF Réu">
+                                <label for="cpfReu">CPF/CNPJ do Réu</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 bg-light p-3 rounded-3">
+                            <label class="form-label fw-bold mb-2 small text-uppercase text-muted">Polo Ativo (quem representamos) *</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="polo" id="poloAutor" value="autor" checked>
+                                    <label class="form-check-label" for="poloAutor">Autor/Requerente</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="polo" id="poloReu" value="reu">
+                                    <label class="form-check-label" for="poloReu">Réu/Requerido</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mt-2 mb-3"><i class="bi bi-info-circle me-2"></i>Detalhes</h6>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Valor da Causa</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0">R$</span>
+                                <input type="number" step="0.01" class="form-control bg-light border-0" id="valorCausa" name="valor_causa" placeholder="0,00">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Data de Distribuição</label>
+                            <input type="date" class="form-control bg-light border-0" id="dataDistribuicao" name="data_distribuicao">
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea class="form-control bg-light border-0" id="observacoes" name="observacoes" style="height: 100px" placeholder="Obs"></textarea>
+                                <label for="observacoes">Observações</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="syncCNJ" name="sync_cnj">
+                                <label class="form-check-label" for="syncCNJ">
+                                    <i class="bi bi-arrow-clockwise text-primary me-1"></i>
+                                    Tentar importar dados automaticamente do CNJ
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light border-top-0 rounded-bottom-4">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm hover-scale" onclick="salvarProcesso()">
+                    <i class="bi bi-floppy me-2"></i>Salvar Processo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let paginaAtual = 1;
+const novoProcessoModal = new bootstrap.Modal(document.getElementById('novoProcessoModal'));
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Máscara CNJ
+    const cnjInput = document.getElementById('numeroCNJ');
+    if(cnjInput) {
+        cnjInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 20) value = value.slice(0, 20);
+
+            if (value.length > 0) {
+                let formatted = value;
+                if (value.length > 7) formatted = value.slice(0, 7) + '-' + value.slice(7);
+                if (value.length > 9) formatted = formatted.slice(0, 10) + '.' + value.slice(9);
+                if (value.length > 13) formatted = formatted.slice(0, 15) + '.' + value.slice(13);
+                if (value.length > 14) formatted = formatted.slice(0, 17) + '.' + value.slice(14);
+                if (value.length > 16) formatted = formatted.slice(0, 20) + '.' + value.slice(16);
+                e.target.value = formatted;
+            }
+        });
+    }
+
+    // Filtros via AJAX
+    document.getElementById('filtrosForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        carregarProcessos();
+    });
+});
+
+function showNovoProcessoModal() {
+    document.getElementById('novoProcessoForm').reset();
+    novoProcessoModal.show();
+}
+
+async function carregarProcessos(page = 1) {
+    const form = document.getElementById('filtrosForm');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    params.append('page', page);
+    
+    paginaAtual = page;
+    
+    const tbody = document.getElementById('processosTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-2 text-muted small">Carregando processos...</p>
+            </td>
+        </tr>
+    `;
+
+    try {
+        const response = await fetch(`{{ url_for('processos') }}?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error('Erro ao carregar processos');
+        
+        const data = await response.json();
+        const processos = data.processos || [];
+        
+        if (processos.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="mb-3"><i class="bi bi-folder2-open display-4 text-muted opacity-25"></i></div>
+                        <p class="text-muted mb-0">Nenhum processo encontrado com estes filtros.</p>
+                    </td>
+                </tr>
+            `;
+            document.getElementById('paginacao').innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = processos.map(p => `
+            <tr class="cursor-pointer" onclick="window.location.href='/processos/${p.id}'">
+                <td class="ps-4">
+                    <div class="fw-bold text-dark">${p.numero}</div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fw-normal mt-1">${p.area || '-'}</span>
+                </td>
+                <td>
+                    <div class="d-flex flex-column">
+                        <span class="fw-medium text-dark mb-1"><i class="bi bi-person-fill text-success me-1"></i>${p.autor || 'N/A'}</span>
+                        <span class="text-muted small"><i class="bi bi-person-fill-slash text-danger me-1"></i>${p.reu || 'N/A'}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-medium">${p.vara || '-'}</div>
+                    <small class="text-muted">${p.tribunal || '-'}</small>
+                </td>
+                <td>
+                    ${getStatusBadge(p.status)}
+                </td>
+                <td>
+                    <div class="text-muted small">${p.ultima_movimentacao_data || '-'}</div>
+                    <div class="text-truncate small text-muted" style="max-width: 200px;" title="${p.ultima_movimentacao_descricao || ''}">
+                        ${p.ultima_movimentacao_descricao || ''}
+                    </div>
+                </td>
+                <td class="text-end pe-4" onclick="event.stopPropagation()">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3">
+                            <li><a class="dropdown-item" href="/processos/${p.id}"><i class="bi bi-eye me-2"></i>Ver Detalhes</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('peticao_nova') }}?processo_id=${p.id}"><i class="bi bi-file-earmark-plus me-2"></i>Nova Petição</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="arquivarProcesso(${p.id})"><i class="bi bi-archive me-2"></i>Arquivar</a></li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        renderizarPaginacao(data.total_pages, page);
+
+    } catch (error) {
+        console.error(error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5 text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar processos. Tente novamente.
+                </td>
+            </tr>
+        `;
+        Toast.error('Erro ao carregar processos.');
+    }
+}
+
+function renderizarPaginacao(totalPages, currentPage) {
+    const paginacao = document.getElementById('paginacao');
+    if (totalPages <= 1) {
+        paginacao.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    
+    // Anterior
+    html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="carregarProcessos(${currentPage - 1}); return false;">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+    `;
+
+    // Páginas (simplificado: mostra todas ou range)
+    // Para simplificar, mostraremos apenas atual, anterior e próxima + primeira e última
+    
+    // TODO: Melhorar lógica de range para muitos números
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="carregarProcessos(${i}); return false;">${i}</a>
+                </li>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+
+    // Próximo
+    html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="carregarProcessos(${currentPage + 1}); return false;">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    `;
+
+    paginacao.innerHTML = html;
+}
+
+function getStatusBadge(status) {
+    if (status === 'ativo') return '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Ativo</span>';
+    if (status === 'arquivado') return '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Arquivado</span>';
+    return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">${status}</span>`;
+}
+
+async function salvarProcesso() {
+    const form = document.getElementById('novoProcessoForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Tratamento checkbox
+    data.sync_cnj = document.getElementById('syncCNJ').checked;
+    // delete data.importar_cnj; // Não é mais necessário pois o name já é sync_cnj, mas mantemos a atribuição explícita para garantir boolean
+
+    const btn = document.querySelector('#novoProcessoModal .btn-primary');
+    const originalText = btn.innerHTML;
+    UI.setLoading(btn, true, 'Salvando...');
+
+    try {
+        const response = await fetch('/cnj/salvar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            Toast.success('Processo salvo com sucesso!');
+            novoProcessoModal.hide();
+            carregarProcessos(); // Recarrega a lista
+        } else {
+            throw new Error(result.error || result.detail || 'Erro ao salvar processo');
+        }
+    } catch (error) {
+        console.error(error);
+        Toast.error(error.message);
+    } finally {
+        UI.setLoading(btn, false, originalText);
+    }
+}
+
+function arquivarProcesso(id) {
+    if(!confirm('Tem certeza que deseja arquivar este processo?')) return;
+    // Implementar endpoint de arquivamento se existir
+    Toast.info('Funcionalidade de arquivamento em breve.');
+}
+
+function exportarProcessos(formato) {
+    Toast.info(`Exportando para ${formato.toUpperCase()}...`);
+    // Implementar lógica de exportação
+}
+</script>
+{% endblock %}

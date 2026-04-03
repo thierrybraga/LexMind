@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Modelos LLM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sticky Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white bg-opacity-75 backdrop-blur py-3 border-bottom z-index-1000" style="top: 0;">
+        <div>
+            <h2 class="mb-1 fw-bold text-gradient"><i class="bi bi-cpu me-2"></i>Gestão de Modelos LLM</h2>
+            <p class="text-muted mb-0">Gerencie os modelos de Inteligência Artificial disponíveis</p>
+        </div>
+        <div>
+            <span id="openai-status" class="badge bg-secondary rounded-pill px-3 py-2 shadow-sm">
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Verificando...
+            </span>
+        </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4 fade-in-up">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale transition-all">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary me-3">
+                            <i class="bi bi-lightning-charge-fill fs-4"></i>
+                        </div>
+                        <h6 class="card-subtitle text-muted text-uppercase small fw-bold mb-0">Modelo Ativo</h6>
+                    </div>
+                    <h3 id="active-model" class="card-title fw-bold text-primary mb-0">-</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 fade-in-up delay-100">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale transition-all">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success me-3">
+                            <i class="bi bi-layers-fill fs-4"></i>
+                        </div>
+                        <h6 class="card-subtitle text-muted text-uppercase small fw-bold mb-0">Modelos Disponíveis</h6>
+                    </div>
+                    <h3 id="models-count" class="card-title fw-bold text-dark mb-0">-</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 fade-in-up delay-200">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-scale transition-all">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 p-3 rounded-circle text-info me-3">
+                            <i class="bi bi-hdd-network-fill fs-4"></i>
+                        </div>
+                        <h6 class="card-subtitle text-muted text-uppercase small fw-bold mb-0">Provedor</h6>
+                    </div>
+                    <h3 id="provider-name" class="card-title fw-bold text-dark mb-0 font-monospace">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Models Table -->
+    <div class="card border-0 shadow-sm rounded-4 fade-in-up delay-300">
+        <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-list-check me-2"></i>Lista de Modelos</h5>
+            <button class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="loadModels()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 text-uppercase text-muted small fw-bold border-0">Modelo</th>
+                            <th class="text-uppercase text-muted small fw-bold border-0">Criado em</th>
+                            <th class="text-uppercase text-muted small fw-bold border-0">Proprietário</th>
+                            <th class="text-uppercase text-muted small fw-bold border-0 text-end pe-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="models-table" class="border-top-0">
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <div class="spinner-border text-primary mb-2" role="status"></div>
+                                <p class="mb-0 small">Carregando modelos...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Usando rotas locais do Flask que já tratam autenticação
+const API_BASE = '';
+
+async function loadStatus() {
+    try {
+        const resp = await fetch(`${API_BASE}/admin/llm/status`);
+        
+        if (!resp.ok) throw new Error('Falha ao carregar status');
+        
+        const data = await resp.json();
+        
+        document.getElementById('active-model').textContent = data.active_model || '-';
+        document.getElementById('models-count').textContent = data.models_count || '0';
+        document.getElementById('provider-name').textContent = data.provider || 'OpenAI';
+        
+        const badge = document.getElementById('openai-status');
+        if (data.openai_online) {
+            badge.className = 'badge bg-success rounded-pill px-3 py-2 shadow-sm';
+            badge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Online';
+        } else {
+            badge.className = 'badge bg-danger rounded-pill px-3 py-2 shadow-sm';
+            badge.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> Offline';
+        }
+    } catch (e) {
+        console.error('Erro ao carregar status:', e);
+        // Silencioso no primeiro carregamento para não spammar erro se API estiver offline
+        // if (typeof Toast !== 'undefined') Toast.error('Erro ao verificar status da API');
+    }
+}
+
+async function loadModels() {
+    const tbody = document.getElementById('models-table');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-2" role="status"></div><p class="mb-0 small">Atualizando lista...</p></td></tr>';
+
+    try {
+        const resp = await fetch(`${API_BASE}/admin/llm/models`);
+        
+        if (!resp.ok) throw new Error('Falha ao carregar modelos');
+        
+        const data = await resp.json();
+
+        if (!data.models || data.models.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Nenhum modelo disponível</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.models.map(m => `
+            <tr>
+                <td class="ps-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded p-2 me-3 text-primary">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div>
+                            <span class="fw-bold text-dark d-block">${m.name}</span>
+                            <span class="small text-muted">${m.id || m.name}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center text-muted">
+                        <i class="bi bi-calendar3 me-2"></i>
+                        ${m.created_at ? new Date(m.created_at * 1000).toLocaleDateString('pt-BR') : '-'}
+                    </div>
+                </td>
+                <td>
+                    <span class="badge bg-light text-dark border">${m.owned_by || '-'}</span>
+                </td>
+                <td class="text-end pe-4">
+                    ${m.is_active
+                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3"><i class="bi bi-check2 me-1"></i>Ativo</span>'
+                        : `<button class="btn btn-sm btn-outline-primary rounded-pill px-3 hover-scale" onclick="setActive('${m.name}')">
+                             <i class="bi bi-power me-1"></i>Ativar
+                           </button>`}
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Erro ao carregar modelos:', e);
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>Erro ao carregar modelos</td></tr>';
+        if (typeof Toast !== 'undefined') Toast.error('Erro ao carregar lista de modelos');
+    }
+}
+
+async function setActive(name) {
+    if (!confirm(`Deseja definir "${name}" como o modelo ativo para o sistema?`)) return;
+    
+    try {
+        const resp = await fetch(`${API_BASE}/admin/llm/active-model`, {
+            method: 'PUT', 
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name })
+        });
+        
+        if (resp.ok) {
+            if (typeof Toast !== 'undefined') {
+                Toast.success(`Modelo ${name} ativado com sucesso!`);
+            } else {
+                alert('Modelo ativo alterado com sucesso!');
+            }
+            loadStatus();
+            loadModels();
+        } else {
+            const err = await resp.json();
+            if (typeof Toast !== 'undefined') {
+                Toast.error('Erro: ' + (err.detail || 'Falha ao alterar modelo'));
+            } else {
+                alert('Erro: ' + (err.detail || 'Falha ao alterar modelo'));
+            }
+        }
+    } catch (e) {
+        console.error('Erro:', e);
+        if (typeof Toast !== 'undefined') Toast.error('Erro de conexão ao alterar modelo');
+    }
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', () => {
+    loadStatus();
+    loadModels();
+});
+</script>
+{% endblock %}
